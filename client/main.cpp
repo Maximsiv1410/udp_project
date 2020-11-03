@@ -35,8 +35,8 @@ public:
 		work(new work_entity(ios)),
 		listener(ios, sock)
 	{
-
 		sock.open(asio::ip::udp::v4());
+
 		sock.connect(remote_);
 		for (std::size_t i = 0; i < threads; i++) {		
 			pool.push_back(std::thread([this]() { ios.run(); }));
@@ -81,10 +81,29 @@ public:
 		listener.update(callback);
 	}
 
+	void stop() {
+		ios.stop();
+	}
+
+	bool stopped() {
+		return ios.stopped();
+	}
+
 };
 
 void back(sip_client& caller, sip::response&& resp) {
 	std::cout << "got response from " << caller.remote().address() << ":" << caller.remote().port() << "\n";
+
+	sip::request req;
+
+	req.set_method(meth)
+		.set_uri(uri)
+		.set_version(version)
+		.add_header(left, right)
+		.set_body(body, strlen(body))
+		.set_remote(caller.remote());
+
+	caller.send(req);
 
 }
 
@@ -107,24 +126,22 @@ int main() {
 	client.send(req);
 
 
-	std::atomic<bool> flag{ false };
-
-	std::thread worker([&client, &flag] {
-		while (!flag.load(std::memory_order_relaxed)) {
+	std::thread worker([&client] {
+		while (!client.stopped()) {
 			client.update([&client](sip::response && res) 
 			{
 				back(client, std::move(res));
 			});
 
 			std::this_thread::yield();
+			std::this_thread::sleep_for(std::chrono::seconds(1));
 		}
 	});
 
 
 
 	std::cin.get();
-
-	flag.store(true, std::memory_order_relaxed);
+	client.stop();
 
 	worker.join();
 

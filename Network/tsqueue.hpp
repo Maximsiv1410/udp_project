@@ -8,7 +8,7 @@ namespace net {
 	class tsqueue {
 		std::queue<T> coll;
 		std::mutex guard;
-
+		std::condition_variable cvar;
 	public:
 
 		template<typename D, typename = typename std::enable_if<std::is_same<typename std::decay<D>::type, T >::value >::type >
@@ -44,6 +44,11 @@ namespace net {
 			std::unique_lock<std::mutex> ulock(guard);
 			coll.clear();
 		}
+
+		/*void wait() {
+			std::unique_lock<std::mutex> ulock(guard);
+			cvar.wait(ulock, [this]() { return !coll.empty()});
+		}*/
 
 		std::shared_ptr<T> try_pop() {
 			std::unique_lock<std::mutex> ulock(guard);

@@ -31,9 +31,6 @@ public:
 		work(new work_entity(ios)),
 		listener(ios, sock) 
 	{
-		if (sock.is_open()) {
-			std::cout << "opened\n";
-		}
 
 		for (std::size_t i = 0; i < threads; i++) {
 			pool.push_back(std::thread([this]() { ios.run(); }));
@@ -42,8 +39,6 @@ public:
 	}
 
 	~sip_server() {
-
-		//sock.shutdown(sock.shutdown_both); // causes exception
 		sock.close();
 		work.reset(nullptr);
 
@@ -101,6 +96,9 @@ int main() {
 
 	std::atomic<bool> flag{ false };
 
+
+	//std::this_thread::sleep_for(std::chrono::seconds(5));
+
 	std::thread worker([&server, &flag]{
 		while (!flag.load(std::memory_order_relaxed)) {
 			server.update([&server](sip::request && req) 
@@ -109,12 +107,11 @@ int main() {
 			});
 
 			std::this_thread::yield();
-			//std::this_thread::sleep_for(std::chrono::seconds(2));
+			std::this_thread::sleep_for(std::chrono::seconds(2));
 		}
 	});
 
 	
-	//std::cout << server.local().address() << ":" << server.local().port();
 	std::cin.get();
 	flag.store(true, std::memory_order_relaxed);
 

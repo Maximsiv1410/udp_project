@@ -45,7 +45,7 @@ namespace net {
 			bool idle = qout.empty();
 			qout.push(std::move(res));
 
-			asio::post(ios_,
+			asio::post(
 				[this, idle]() {
 				if (idle) {
 					write();
@@ -96,9 +96,7 @@ namespace net {
 
 
 		void write() {
-			
 			auto res = qout.pop();
-			//std::cout << res.remote().address() << ":" << res.remote().port() << "\n";
 			output_builder builder(res);
 			builder.extract_to(out_buff);
 
