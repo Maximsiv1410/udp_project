@@ -5,12 +5,12 @@
 using namespace boost;
 using namespace net;
 
-std::string meth = "INVITE";
-std::string uri = "sip:smbd@lol.com";
-std::string version = "SIP/2.0";
-std::string left = "Content-Length";
-std::string right = "5";
-std::string body = "hello";
+const char* meth = "INVITE";
+const char* uri = "sip:smbd@lol.com";
+const char*version = "SIP/2.0";
+const char* left = "Content-Length";
+const char* right = "5";
+const char*body = "hello";
 
 
 class sip_client {
@@ -37,9 +37,6 @@ public:
 	{
 
 		sock.open(asio::ip::udp::v4());
-		if (sock.is_open()) {
-			std::cout << "opened\n";
-		}
 		sock.connect(remote_);
 		for (std::size_t i = 0; i < threads; i++) {		
 			pool.push_back(std::thread([this]() { ios.run(); }));
@@ -48,8 +45,9 @@ public:
 	}
 
 	~sip_client() {
-		sock.shutdown(sock.shutdown_both);
-		sock.close();
+		boost::system::error_code ec;
+		sock.shutdown(sock.shutdown_both, ec);
+		sock.close(ec);
 		
 		work.reset(nullptr);
 		if (!ios.stopped()) {
@@ -102,7 +100,7 @@ int main() {
 		.set_uri(uri)
 		.set_version(version)
 		.add_header(left, right)
-		.set_body(body)
+		.set_body(body, strlen(body))
 		.set_remote(client.remote());
 
 
