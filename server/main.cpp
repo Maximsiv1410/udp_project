@@ -90,7 +90,7 @@ public:
 
 void back(sip_server& caller, sip::request && req) {
 	//std::cout << "got request from " << req.remote().address() << ":" << req.remote().port() << "\n";
-	std::cout << ",,\n";
+	//std::cout << ",,\n";
 	sip::response resp;
 	resp.set_version("SIP/2.0")
 		.set_code(200)

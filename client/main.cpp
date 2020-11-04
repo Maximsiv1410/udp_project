@@ -105,7 +105,7 @@ public:
 
 void back(sip_client& caller, sip::response&& resp) {
 	//std::cout << "got response from " << caller.remote().address() << ":" << caller.remote().port() << "\n";
-	std::cout << "..\n";
+	//std::cout << "..\n";
 	sip::request req;
 
 	req.set_method(meth)
@@ -122,7 +122,7 @@ void back(sip_client& caller, sip::response&& resp) {
 
 int main() {
 	setlocale(LC_ALL, "ru");
-
+try {	
 	sip_client client("127.0.0.1", 2, 6000);
 
 	sip::request req;
@@ -135,7 +135,7 @@ int main() {
 		.set_remote(client.remote());
 
 
-	
+
 
 	client.set_callback([&client](sip::response && res)
 	{
@@ -163,5 +163,10 @@ int main() {
 
 	//worker.join();
 
+}
+catch(std::exception& ex) {
+	std::cout << ex.what() << '\n';
+}
 	return 0;
+
 }

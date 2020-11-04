@@ -408,7 +408,7 @@ namespace net {
 			//using send_method = asio::ip::udp::socket::async_send;
 		};
 
-		using client = basic_udp_io<sip, client_traits, buffer>;
-		using server = basic_udp_io<sip, server_traits, buffer>;
+		using client = basic_udp_service<sip, client_traits, buffer>;
+		using server = basic_udp_service<sip, server_traits, buffer>;
 	}
 }

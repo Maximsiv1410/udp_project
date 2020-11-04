@@ -2,7 +2,6 @@
 
 #include <boost/asio.hpp>
 #include "net_essential.hpp"
-
 #include "tsqueue.hpp"
 
 namespace net {
@@ -10,7 +9,7 @@ namespace net {
 	using namespace asio;
 
 	template<typename Proto, typename Traits, typename Buffer>
-	class basic_udp_io {
+	class basic_udp_service {
 		using input_type = typename Traits::input_type;
 		using output_type = typename Traits::output_type;
 		using input_parser = typename Traits::template input_parser<Buffer>;
@@ -37,12 +36,12 @@ namespace net {
 
 	public:
 
-		basic_udp_io(io_context& ios, ip::udp::socket& sock)
+		basic_udp_service(io_context& ios, ip::udp::socket& sock)
 			: ios_(ios),
 			sock_(sock) {
 		}
 
-		virtual ~basic_udp_io() {
+		virtual ~basic_udp_service() {
 		}
 
 		void start(bool notify = false) {
