@@ -167,8 +167,10 @@ namespace net {
 			writing.store(true, std::memory_order_relaxed);
 			auto ptr = qout.try_pop();
 
-			if (!ptr)
+			if (!ptr) {		
+				writing.store(false, std::memory_order_relaxed);
 				return;
+			}
 
 			auto res = std::move(*ptr);
 			output_builder builder(res);
@@ -195,10 +197,14 @@ namespace net {
 
 		void on_write() {
 			out_buff.zero();
-			writing.store(false, std::memory_order_relaxed);
+			writing.store(false, std::memory_order_relaxed); // ????
 
 			if (!qout.empty()) {
 				write();
+			}
+			else {
+				//writing.store(false, std::memory_order_relaxed);
+				// mb exchange with upper store?
 			}
 		}
 

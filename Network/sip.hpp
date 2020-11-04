@@ -318,6 +318,33 @@ namespace net {
 
 				output.set_size(offset);
 			}
+
+
+			void extract(std::vector<char> & buffer) {
+				std::size_t length = 0;
+				length += sipreq.method().size();
+				length += 1;
+
+				length += sipreq.uri().size();
+				length += 1;
+
+				length += sipreq.version().size();
+				length += 2;
+
+				for (auto & header : sipreq.headers()) {
+					length += header.first.size();
+					length += 2;
+					length += header.second.size();
+					length += 2;
+				}
+				length += 2;
+				length += sipreq.body().size();
+
+				////////
+				buffer.resize(length);
+				std::size_t offset = 0;
+				// here just copy memcpy's and operator[] actions from extract_to.....
+			}
 		};
 
 
@@ -373,7 +400,37 @@ namespace net {
 				offset += sipres.body().size();
 
 				output.set_size(offset);
+			}
 
+
+			void extract(std::vector<char> & buffer) {
+				std::size_t length = 0;
+				length += 1;
+
+
+				std::string code = std::to_string(sipres.code());
+				length += code.size();
+				length += 1;
+
+
+				length += sipres.status().size();
+				length += 2;
+
+				for (auto & header : sipres.headers()) {
+					length += header.first.size();
+					length += 2;
+					length += header.second.size();
+					length += 2;
+				}
+				length += 2;
+				length += sipres.body().size();
+
+				///////
+				buffer.resize(length);
+				std::size_t offset = 0;
+				// here just copy memcpy's and operator[] actions from extract_to.....
+
+				
 			}
 		};
 
