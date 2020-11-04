@@ -11,7 +11,7 @@ using namespace boost;
 
 using namespace net;
 
-class sip_server   {
+class sip_server {
 	using work_ptr = std::unique_ptr<asio::io_context::work>;
 	using work_entity = asio::io_context::work;
 
@@ -20,36 +20,39 @@ class sip_server   {
 	asio::ip::udp::endpoint endpoint;
 	asio::ip::udp::socket sock;
 
+	std::thread ios_thread;
 	sip::server listener;
 
 	std::vector<std::thread> pool;
+
 public:
 	sip_server(std::size_t threads, std::size_t port = 5060)
 		: ios{},
 		endpoint(asio::ip::udp::v4(), port),
 		sock(ios, endpoint),
 		work(new work_entity(ios)),
-		listener(ios, sock) 
+		listener(ios, sock)
 	{
-
 		for (std::size_t i = 0; i < threads; i++) {
 			pool.push_back(std::thread([this]() { ios.run(); }));
 		}
-		listener.start();
 	}
 
 	~sip_server() {
-		sock.close();
 		work.reset(nullptr);
 
 		if (!ios.stopped()) {
 			ios.stop();
 		}
-		
+
 		for (auto & th : pool) {
 			if (th.joinable()) {
 				th.join();
 			}
+		}
+
+				if (sock.is_open()) {
+			sock.close();
 		}
 	}
 
@@ -58,6 +61,12 @@ public:
 	}
 
 	asio::io_context& get_io_context() { return ios; }
+
+	void start(bool notifying) {
+		listener.start(notifying);
+	}
+
+
 
 	bool has_income() {
 		return !listener.incoming().empty();
@@ -71,12 +80,17 @@ public:
 		listener.update(callback);
 	}
 
+	void set_callback(std::function<void(sip::request&&)> callback) {
+		listener.set_callback(callback);
+	}
+
+
 };
 
 
 void back(sip_server& caller, sip::request && req) {
-	std::cout << "got request from " << req.remote().address() << ":" << req.remote().port() << "\n";
-
+	//std::cout << "got request from " << req.remote().address() << ":" << req.remote().port() << "\n";
+	std::cout << ",,\n";
 	sip::response resp;
 	resp.set_version("SIP/2.0")
 		.set_code(200)
@@ -91,31 +105,33 @@ void back(sip_server& caller, sip::request && req) {
 int main() {
 	setlocale(LC_ALL, "ru");
 
-	sip_server server(2, 6000);
+	sip_server server(4, 6000);
+	server.set_callback([&server](sip::request && req) {
+		back(server, std::move(req));
+	});
 
+	server.start(true);
 
-	std::atomic<bool> flag{ false };
-
+	//std::atomic<bool> flag{ false };
 
 	//std::this_thread::sleep_for(std::chrono::seconds(5));
 
-	std::thread worker([&server, &flag]{
-		while (!flag.load(std::memory_order_relaxed)) {
-			server.update([&server](sip::request && req) 
-			{
-				back(server, std::move(req)); 
-			});
+	//std::thread worker([&server, &flag] {
+	//	while (!flag.load(std::memory_order_relaxed)) {
+	//		server.update([&server](sip::request && req) {
+	//			back(server, std::move(req));
+	//		});
 
-			std::this_thread::yield();
-			std::this_thread::sleep_for(std::chrono::seconds(2));
-		}
-	});
+	//		//std::this_thread::yield();
+	//		//std::this_thread::sleep_for(std::chrono::seconds(2));
+	//	}
+	//});
 
-	
+
 	std::cin.get();
-	flag.store(true, std::memory_order_relaxed);
+	//flag.store(true, std::memory_order_relaxed);
 
-	worker.join();
+	//worker.join();
 	return 0;
 }
 

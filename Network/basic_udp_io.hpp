@@ -27,6 +27,14 @@ namespace net {
 		ip::udp::socket& sock_;
 		ip::udp::endpoint remote_;
 
+		std::atomic<bool> writing{ false };
+
+		std::function<void(input_type&&)> cback;
+
+		bool notify_mode;
+
+		std::mutex mtx;
+
 	public:
 
 		basic_udp_io(io_context& ios, ip::udp::socket& sock)
@@ -37,32 +45,39 @@ namespace net {
 		virtual ~basic_udp_io() {
 		}
 
-		void start() {
+		void start(bool notify = false) {
+			notify_mode = notify;
 			read();
 		}
 
 		void send(output_type & res) {
-			bool idle = qout.empty();
 			qout.push(std::move(res));
-
-			asio::post(
-				[this, idle]() {
-				if (idle) {
+			asio::post(ios_,
+			[this] {
+				if (!writing.load(std::memory_order_relaxed))
 					write();
-				}
 			});
+		}
+
+		void set_callback(std::function<void(input_type&&)> & callback) {
+			cback = std::move(callback);
 		}
 
 		void update(std::function<void(input_type&&)> callback) {
 			asio::post(ios_, [this, callback] {
 				if (!qin.empty()) {
-					callback(qin.pop());
+					auto item = qin.try_pop();
+					if (item) {
+						callback(std::move(*item));
+					}
+
 				}
 			});
 		}
 
-		tsqueue<input_type> & incoming() { 
-			return qin; 
+
+		tsqueue<input_type> & incoming() {
+			return qin;
 		}
 
 	private:
@@ -72,16 +87,16 @@ namespace net {
 			[this](std::error_code ec, std::size_t bytes) {
 				if (!ec) {
 					if (bytes) {
-						std::cout << "read message \n";
+						//std::cout << "read message \n";
+						std::cout << ",\n";
 						in_buff.set_size(bytes);
 						on_read();
 					}
 					else {
-						std::cout << "bad read - bytes\n";
+						read();
 					}
 				}
 				else {
-					std::cout << "bad read - error code\n";
 					std::cout << ec.message() << " " << ec.category().name() << " " << ec.value() << "\n";
 				}
 			});
@@ -90,13 +105,30 @@ namespace net {
 		void on_read() {
 			input_parser parser(in_buff, std::move(remote_));
 			qin.push(parser.parse());
+
+			if (notify_mode) {
+				asio::post(ios_, [this] 
+				{ 
+					auto ptr = qin.try_pop();
+					if (ptr) {
+						cback(std::move(*ptr));
+					}
+				});
+			}
+			
+
 			in_buff.zero();
 			read();
 		}
 
 
 		void write() {
-			auto res = qout.pop();
+			if (writing.load(std::memory_order_relaxed)) return;
+
+			writing.store(true, std::memory_order_relaxed);
+			auto ptr = qout.try_pop();
+			if (!ptr) return; 
+			auto res = std::move(*ptr);
 			output_builder builder(res);
 			builder.extract_to(out_buff);
 
@@ -104,7 +136,8 @@ namespace net {
 			[this](std::error_code ec, std::size_t bytes) {
 				if (!ec) {
 					if (bytes) {
-						std::cout << "written message\n";
+						//std::cout << "written message\n";
+						std::cout << ".\n";
 						on_write();
 					}
 					else {
@@ -112,7 +145,6 @@ namespace net {
 					}
 				}
 				else {
-					std::cout << "bad write - error code\n";
 					std::cout << ec.message() + "\n";
 				}
 			});
@@ -120,6 +152,8 @@ namespace net {
 
 		void on_write() {
 			out_buff.zero();
+			writing.store(false, std::memory_order_relaxed);
+
 
 			if (!qout.empty()) {
 				write();

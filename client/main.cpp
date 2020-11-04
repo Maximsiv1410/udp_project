@@ -20,13 +20,15 @@ class sip_client {
 	asio::io_context ios;
 	work_ptr work;
 
-	
+
 	asio::ip::udp::endpoint remote_;
 	asio::ip::udp::socket sock;
 
 	sip::client listener;
 
+
 	std::vector<std::thread> pool;
+
 public:
 	sip_client(std::string address, std::size_t threads, std::size_t port = 5060)
 		: ios{},
@@ -36,22 +38,22 @@ public:
 		listener(ios, sock)
 	{
 		sock.open(asio::ip::udp::v4());
-
 		sock.connect(remote_);
-		for (std::size_t i = 0; i < threads; i++) {		
+
+		for (std::size_t i = 0; i < threads; i++) {
 			pool.push_back(std::thread([this]() { ios.run(); }));
 		}
-		listener.start();
 	}
 
 	~sip_client() {
-		boost::system::error_code ec;
-		sock.shutdown(sock.shutdown_both, ec);
-		sock.close(ec);
-		
 		work.reset(nullptr);
+
 		if (!ios.stopped()) {
 			ios.stop();
+		}
+
+		if (sock.is_open()) {
+			sock.close();
 		}
 
 		for (auto & th : pool) {
@@ -89,11 +91,19 @@ public:
 		return ios.stopped();
 	}
 
+	void start(bool notifying) {
+		listener.start(notifying);
+	}
+
+	void set_callback(std::function<void(sip::response&&)> callback) {
+		listener.set_callback(callback);
+	}
+
 };
 
 void back(sip_client& caller, sip::response&& resp) {
-	std::cout << "got response from " << caller.remote().address() << ":" << caller.remote().port() << "\n";
-
+	//std::cout << "got response from " << caller.remote().address() << ":" << caller.remote().port() << "\n";
+	std::cout << "..\n";
 	sip::request req;
 
 	req.set_method(meth)
@@ -123,27 +133,33 @@ int main() {
 		.set_remote(client.remote());
 
 
+	
+
+	client.set_callback([&client](sip::response && res)
+	{
+		back(client, std::move(res));
+	});
+	client.start(true);
+
 	client.send(req);
 
-
-	std::thread worker([&client] {
+	/*std::thread worker([&client] {
 		while (!client.stopped()) {
-			client.update([&client](sip::response && res) 
-			{
+			client.update([&client](sip::response && res) {
 				back(client, std::move(res));
 			});
 
-			std::this_thread::yield();
-			std::this_thread::sleep_for(std::chrono::seconds(1));
+			//std::this_thread::yield();
+			//std::this_thread::sleep_for(std::chrono::seconds(1));
 		}
-	});
+	}); */
 
 
 
 	std::cin.get();
-	client.stop();
+	//client.stop();
 
-	worker.join();
+	//worker.join();
 
 	return 0;
 }

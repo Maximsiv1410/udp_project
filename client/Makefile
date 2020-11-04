@@ -2,7 +2,7 @@ default:
 	g++ main.cpp -o client.out -lboost_system -lpthread
 
 san:
-	g++ main.cpp -o clientsan.out -lboost_system -lpthread
+	g++ main.cpp -o clientsan.out -lboost_system -lpthread -fsanitize=thread
 
 opt:
 	g++ main.cpp -o client.out -lboost_system -lpthread -O2
