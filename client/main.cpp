@@ -77,8 +77,8 @@ public:
 		return !listener.incoming().empty();
 	}
 
-	void send(sip::request & resp) {
-		listener.send(resp);
+	void async_send(sip::request & resp) {
+		listener.async_send(resp);
 	}
 
 	void update(std::function<void(sip::response&&)> callback) {
@@ -115,58 +115,57 @@ void back(sip_client& caller, sip::response&& resp) {
 		.set_body(body, strlen(body))
 		.set_remote(caller.remote());
 
-	caller.send(req);
+	caller.async_send(req);
 
 }
 
 
 int main() {
 	setlocale(LC_ALL, "ru");
-try {	
-	sip_client client("127.0.0.1", 2, 6000);
+	try {
+		sip_client client("127.0.0.1", 2, 6000);
 
-	sip::request req;
+		sip::request req;
 
-	req.set_method(meth)
-		.set_uri(uri)
-		.set_version(version)
-		.add_header(left, right)
-		.set_body(body, strlen(body))
-		.set_remote(client.remote());
-
-
-
-
-	client.set_callback([&client](sip::response && res)
-	{
-		back(client, std::move(res));
-	});
-	client.start(true);
-
-	client.send(req);
-
-	/*std::thread worker([&client] {
-		while (!client.stopped()) {
-			client.update([&client](sip::response && res) {
-				back(client, std::move(res));
-			});
-
-			//std::this_thread::yield();
-			//std::this_thread::sleep_for(std::chrono::seconds(1));
-		}
-	}); */
+		req.set_method(meth)
+			.set_uri(uri)
+			.set_version(version)
+			.add_header(left, right)
+			.set_body(body, strlen(body))
+			.set_remote(client.remote());
 
 
 
-	std::cin.get();
-	//client.stop();
 
-	//worker.join();
+		client.set_callback([&client](sip::response && res) {
+			back(client, std::move(res));
+		});
+		client.start(true);
 
-}
-catch(std::exception& ex) {
-	std::cout << ex.what() << '\n';
-}
+		client.async_send(req);
+
+		/*std::thread worker([&client] {
+			while (!client.stopped()) {
+				client.update([&client](sip::response && res) {
+					back(client, std::move(res));
+				});
+
+				//std::this_thread::yield();
+				//std::this_thread::sleep_for(std::chrono::seconds(1));
+			}
+		}); */
+
+
+
+		std::cin.get();
+		//client.stop();
+
+		//worker.join();
+
+	}
+	catch (std::exception& ex) {
+		std::cout << ex.what() << '\n';
+	}
 	return 0;
 
 }

@@ -39,7 +39,9 @@ public:
 	}
 
 	~sip_server() {
-		work.reset(nullptr);
+		if (work) {
+			work.reset(nullptr);
+		}
 
 		if (!ios.stopped()) {
 			ios.stop();
@@ -51,7 +53,7 @@ public:
 			}
 		}
 
-				if (sock.is_open()) {
+		if (sock.is_open()) {
 			sock.close();
 		}
 	}
@@ -66,14 +68,12 @@ public:
 		listener.start(notifying);
 	}
 
-
-
 	bool has_income() {
 		return !listener.incoming().empty();
 	}
 
-	void send(sip::response & resp) {
-		listener.send(resp);
+	void async_send(sip::response & resp) {
+		listener.async_send(resp);
 	}
 
 	void update(std::function<void(sip::request&&)> callback) {
@@ -84,6 +84,10 @@ public:
 		listener.set_callback(callback);
 	}
 
+	void stop() {
+		work.reset(nullptr);
+		ios.stop();
+	}
 
 };
 
@@ -98,7 +102,7 @@ void back(sip_server& caller, sip::request && req) {
 		.set_body("response from server")
 		.set_remote(req.remote());
 
-	caller.send(resp);
+	caller.async_send(resp);
 }
 
 

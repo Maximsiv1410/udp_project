@@ -8,12 +8,16 @@ namespace net {
 	class tsqueue {
 		std::queue<T> coll;
 		std::mutex guard;
+
+		//std::condition_variable cvar;
+		//std::mutex push_mtx;
 	public:
 
 		template<typename D, typename = typename std::enable_if<std::is_same<typename std::decay<D>::type, T >::value >::type >
 		void push(D && elem) {
 			std::unique_lock<std::mutex> ulock(guard);
 			coll.push(std::forward<D>(elem));
+			
 		}
 
 		void pop(T & out) {
@@ -44,6 +48,11 @@ namespace net {
 			std::unique_lock<std::mutex> ulock(guard);
 			coll.clear();
 		}
+
+		//void wait() {
+		//	std::unique_lock<std::mutex> waiter(push_mtx);
+		//	cvar.wait([&waiter]() { return !empty(); });
+		//}
 
 		std::shared_ptr<T> try_pop() {
 			std::unique_lock<std::mutex> ulock(guard);
