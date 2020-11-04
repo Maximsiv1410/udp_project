@@ -104,7 +104,7 @@ public:
 };
 
 void back(sip_client& caller, sip::response&& resp) {
-	//std::cout << "got response from " << caller.remote().address() << ":" << caller.remote().port() << "\n";
+	std::cout << "got response from " << caller.remote().address() << ":" << caller.remote().port() << " code: " + std::to_string(resp.code()) << "\n";
 	//std::cout << "..\n";
 	sip::request req;
 
@@ -115,6 +115,7 @@ void back(sip_client& caller, sip::response&& resp) {
 		.set_body(body, strlen(body))
 		.set_remote(caller.remote());
 
+	std::this_thread::sleep_for(std::chrono::milliseconds(50));
 	caller.async_send(req);
 
 }
@@ -135,8 +136,6 @@ int main() {
 			.set_remote(client.remote());
 
 
-
-
 		client.set_callback([&client](sip::response && res) {
 			back(client, std::move(res));
 		});
@@ -144,24 +143,8 @@ int main() {
 
 		client.async_send(req);
 
-		/*std::thread worker([&client] {
-			while (!client.stopped()) {
-				client.update([&client](sip::response && res) {
-					back(client, std::move(res));
-				});
-
-				//std::this_thread::yield();
-				//std::this_thread::sleep_for(std::chrono::seconds(1));
-			}
-		}); */
-
-
 
 		std::cin.get();
-		//client.stop();
-
-		//worker.join();
-
 	}
 	catch (std::exception& ex) {
 		std::cout << ex.what() << '\n';

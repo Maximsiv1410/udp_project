@@ -92,16 +92,18 @@ public:
 };
 
 
+std::atomic<unsigned long long> counter{0};
 void back(sip_server& caller, sip::request && req) {
-	//std::cout << "got request from " << req.remote().address() << ":" << req.remote().port() << "\n";
+	std::cout << "got request from " << req.remote().address() << ":" << req.remote().port() << "\n";
 	//std::cout << ",,\n";
 	sip::response resp;
 	resp.set_version("SIP/2.0")
-		.set_code(200)
+		.set_code(200 + counter)
 		.set_status("OK")
 		.set_body("response from server")
 		.set_remote(req.remote());
 
+		counter++;
 	caller.async_send(resp);
 }
 
@@ -116,26 +118,8 @@ int main() {
 
 	server.start(true);
 
-	//std::atomic<bool> flag{ false };
-
-	//std::this_thread::sleep_for(std::chrono::seconds(5));
-
-	//std::thread worker([&server, &flag] {
-	//	while (!flag.load(std::memory_order_relaxed)) {
-	//		server.update([&server](sip::request && req) {
-	//			back(server, std::move(req));
-	//		});
-
-	//		//std::this_thread::yield();
-	//		//std::this_thread::sleep_for(std::chrono::seconds(2));
-	//	}
-	//});
-
 
 	std::cin.get();
-	//flag.store(true, std::memory_order_relaxed);
-
-	//worker.join();
 	return 0;
 }
 
