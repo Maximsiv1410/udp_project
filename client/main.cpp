@@ -52,14 +52,16 @@ public:
 			ios.stop();
 		}
 
-		if (sock.is_open()) {
-			sock.close();
-		}
+
 
 		for (auto & th : pool) {
 			if (th.joinable()) {
 				th.join();
 			}
+		}
+
+		if (sock.is_open()) {
+			sock.close();
 		}
 
 	}
