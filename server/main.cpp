@@ -98,12 +98,12 @@ void back(sip_server& caller, sip::request && req) {
 	//std::cout << ",,\n";
 	sip::response resp;
 	resp.set_version("SIP/2.0")
-		.set_code(200 + counter)
+		.set_code(200 + counter.load(std::memory_order_relaxed))
 		.set_status("OK")
 		.set_body("response from server")
 		.set_remote(req.remote());
 
-		counter++;
+		counter.fetch_add(1, std::memory_order_relaxed);
 	caller.async_send(resp);
 }
 

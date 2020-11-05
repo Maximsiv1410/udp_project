@@ -7,5 +7,8 @@ san:
 opt:
 	g++ main.cpp -o client.out -lboost_system -lpthread -O2
 
+debug:
+	g++ main.cpp -o client.out -lboost_system -lpthread -g3
+
 clean:
 	rm -rf *.out
