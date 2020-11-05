@@ -10,16 +10,18 @@ namespace net {
 
 	template <typename Proto, typename Traits, typename Buffer>
 	class basic_udp_service {
+		//// gathering traits of service ////
 		using input_type = typename Traits::input_type;
 		using output_type = typename Traits::output_type;
 		using input_parser = typename Traits::template input_parser<Buffer>;
 		using output_builder = typename Traits::output_builder;
 		using buffer = Buffer;
 
+		buffer in_buff;
+
 		std::function<void(input_type&&)> cback;
 		std::mutex callback_mtx;
-
-		buffer in_buff;
+	
 		buffer out_buff;
 
 		tsqueue<input_type> qin;
@@ -30,9 +32,6 @@ namespace net {
 		ip::udp::endpoint remote_;
 
 		bool notify_mode;
-
-
-
 		bool writing{false};
 		std::/*recursive_*/mutex write_mtx;
 	public:
@@ -80,6 +79,7 @@ namespace net {
 			//});
 		}
 
+
 		// !deprecate!
 		void async_update(std::function<void(input_type&&)> callback) {
 			if (notify_mode) return; // ??
@@ -96,10 +96,11 @@ namespace net {
 			});
 		}
 
-
+		// !deprecate!
 		tsqueue<input_type> & incoming() {
 			return qin;
 		}
+
 
 		void async_send(output_type & res) {
 			qout.push(std::move(res));
@@ -130,7 +131,8 @@ namespace net {
 				std::lock_guard<std::mutex> guard(write_mtx);
 				writing = false;
 				return;
-			}			
+			}		
+
 			auto res = std::move(*ptr);	
 			output_builder builder(res);
 			builder.extract_to(out_buff);
@@ -224,6 +226,7 @@ namespace net {
 
 
 	protected:
+		// !note!
 		virtual void on_income() {}
 
 	};

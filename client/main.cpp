@@ -52,8 +52,6 @@ public:
 			ios.stop();
 		}
 
-
-
 		for (auto & th : pool) {
 			if (th.joinable()) {
 				th.join();
@@ -115,7 +113,7 @@ void back(sip_client& caller, sip::response&& resp) {
 		.set_body(body, strlen(body))
 		.set_remote(caller.remote());
 
-	std::this_thread::sleep_for(std::chrono::milliseconds(50));
+	//std::this_thread::sleep_for(std::chrono::milliseconds(50));
 	caller.async_send(req);
 
 }
@@ -124,7 +122,7 @@ void back(sip_client& caller, sip::response&& resp) {
 int main() {
 	setlocale(LC_ALL, "ru");
 	try {
-		sip_client client("127.0.0.1", 2, 6000);
+		sip_client client("127.0.0.1", 4, 6000);
 
 		sip::request req;
 

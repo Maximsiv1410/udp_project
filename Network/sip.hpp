@@ -6,7 +6,6 @@ using namespace boost;
 
 #include "memstream.hpp"
 #include "buffer.hpp"
-
 #include "basic_udp_io.hpp"
 
 namespace net {
@@ -17,6 +16,11 @@ namespace net {
 		};
 
 
+		///////////////////////////////////////////////////////////////////
+		/////// Containers for holding
+		/////// Request and Responses
+		/////// in SIP manner
+		//////////////////////////////////////////////////////////////////
 		class response {
 			sdp sdp_;
 
@@ -84,6 +88,33 @@ namespace net {
 				headers_[left] = right;
 
 				return *this;
+			}
+
+			std::size_t total() {
+				std::size_t length = 0;
+				length += version_();
+				length += 1; // SPACE
+
+				std::string code = std::to_string(code_);
+				length += code.size();
+				length += 1; // SPACE
+
+				length += status_.size();
+				length += 2; // CRLF
+
+
+				for (auto & header : headers_) {
+					length += header.first.size();
+					length += 2; // for ': '
+					length += header.second.size();
+					length += 2; // CRLF
+				}
+
+				length += 2; // additional CRLF
+
+				length += body_.size();
+
+				return length;
 			}
 		};
 
@@ -164,10 +195,42 @@ namespace net {
 
 				return *this;
 			}
+
+			std::size_t total() {
+				std::size_t length = 0;
+				length += method_.size();
+				length += 1; // SPACE
+
+				length += uri_.size();
+				length += 1; // SPACE
+
+				length += version_.size();
+				length += 2; // CRLF
+
+				for (auto & header : headers_) {
+					length += header.first.size();
+					length += 2; // for ': '
+					length += header.second.size();
+					length += 2; // CRLF
+				}
+
+				// additional CRLF
+				length += 2;
+
+				length += body_.size();
+
+				return length;
+			}
 		};
 
 
 
+
+
+		///////////////////////////////////////////////////////////////////
+		/////// Message Parsers
+		/////// Raw Buffers -> High Level Containers
+		//////////////////////////////////////////////////////////////////
 		template <typename Buffer>
 		class request_parser {
 			Buffer & buffer;
@@ -206,12 +269,7 @@ namespace net {
 					}
 				}
 
-				/* /////
-				// в зависимости от Content-Type
-				// парсить тело по разному
-				// например, если тип контента - SDP(Session Description Protocol)
-				// то парсить его в поле request.sdp
-				//// */
+				// shoudl be SDP parsing here, but now skipped this
 
 				request.body().resize(buffer.size() - diff - 4);
 				std::memcpy(request.body().data(), bodyptr + 4, request.body().size());
@@ -232,8 +290,8 @@ namespace net {
 			}
 
 			response parse() {
-				response resp;/*
-				resp.set_remote(std::move(endpoint));*/
+				response resp;
+				/*resp.set_remote(std::move(endpoint));*/
 
 				auto bodyptr = strstr(buffer.data(), "\r\n\r\n");
 				auto diff = bodyptr - buffer.data();
@@ -267,10 +325,13 @@ namespace net {
 
 		};
 
+
+
+
 		///////////////////////////////////////////////////////////////////
-
-
-
+		/////// Message Builders
+		/////// High Level Containers -> Raw buffers
+		//////////////////////////////////////////////////////////////////
 		class request_builder {
 		public:
 			request & sipreq;
@@ -321,34 +382,9 @@ namespace net {
 
 
 			void extract(std::vector<char> & buffer) {
-				std::size_t length = 0;
-				length += sipreq.method().size();
-				length += 1;
-
-				length += sipreq.uri().size();
-				length += 1;
-
-				length += sipreq.version().size();
-				length += 2;
-
-				for (auto & header : sipreq.headers()) {
-					length += header.first.size();
-					length += 2;
-					length += header.second.size();
-					length += 2;
-				}
-				length += 2;
-				length += sipreq.body().size();
-
-				////////
-				buffer.resize(length);
-				std::size_t offset = 0;
-				// here just copy memcpy's and operator[] actions from extract_to.....
+				std::size_t length = sipreq.total();
 			}
 		};
-
-
-
 
 
 
@@ -404,40 +440,18 @@ namespace net {
 
 
 			void extract(std::vector<char> & buffer) {
-				std::size_t length = 0;
-				length += 1;
-
-
-				std::string code = std::to_string(sipres.code());
-				length += code.size();
-				length += 1;
-
-
-				length += sipres.status().size();
-				length += 2;
-
-				for (auto & header : sipres.headers()) {
-					length += header.first.size();
-					length += 2;
-					length += header.second.size();
-					length += 2;
-				}
-				length += 2;
-				length += sipres.body().size();
-
-				///////
-				buffer.resize(length);
-				std::size_t offset = 0;
-				// here just copy memcpy's and operator[] actions from extract_to.....
-
+				std::size_t length = sipres.total();
 				
 			}
 		};
 
 
 
-		class sip {
 
+		//////////////////////////////////////////////////////////////////
+		///// Client and Server Traits 
+		/////////////////////////////////////////////////////////////////
+		class sip {
 		};
 
 

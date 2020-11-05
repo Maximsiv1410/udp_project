@@ -16,8 +16,7 @@ namespace net {
 		template<typename D, typename = typename std::enable_if<std::is_same<typename std::decay<D>::type, T >::value >::type >
 		void push(D && elem) {
 			std::unique_lock<std::mutex> ulock(guard);
-			coll.push(std::forward<D>(elem));
-			
+			coll.push(std::forward<D>(elem));		
 		}
 
 		void pop(T & out) {
@@ -33,6 +32,18 @@ namespace net {
 			return ret;
 		}
 		
+		std::shared_ptr<T> try_pop() {
+			std::unique_lock<std::mutex> ulock(guard);
+			if (!coll.empty()) {
+				T item = std::move(coll.front());
+				auto ptr = std::make_shared<T>(std::move(item));
+				coll.pop();
+				return ptr;
+			}
+			else {
+				return std::shared_ptr<T>(nullptr);
+			}
+		}
 
 		std::size_t size() {
 			std::unique_lock<std::mutex> ulock(guard);
@@ -52,21 +63,7 @@ namespace net {
 		//void wait() {
 		//	std::unique_lock<std::mutex> waiter(push_mtx);
 		//	cvar.wait([&waiter]() { return !empty(); });
-		//}
-
-		std::shared_ptr<T> try_pop() {
-			std::unique_lock<std::mutex> ulock(guard);
-			if (!coll.empty()) {
-				T item = std::move(coll.front());
-				auto ptr = std::make_shared<T>(std::move(item));
-				coll.pop();
-				return ptr;
-			}
-			else {
-				return std::shared_ptr<T>(nullptr);
-			}
-		}
-
+		//}	
 	};
 
 }
