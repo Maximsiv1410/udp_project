@@ -55,6 +55,17 @@ namespace net {
 		}
 
 
+		/*void poll(std::function<void(input_type&&)> task) {
+			while (!stop.load()) {
+				if (qin.empty()) qin.wait();
+				auto ptr = qin.try_pop();
+				if (ptr) {
+					task(std::move(*ptr));
+				}
+			}
+
+		} */
+
 		// !deprecate!
 		void update(/*bool wait = false, */std::function<void(input_type&&)> callback) {
 			if (notify_mode) return; // we should only use either update or default callback

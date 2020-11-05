@@ -10,13 +10,15 @@ namespace net {
 		std::mutex guard;
 
 		//std::condition_variable cvar;
-		//std::mutex push_mtx;
 	public:
 
 		template<typename D, typename = typename std::enable_if<std::is_same<typename std::decay<D>::type, T >::value >::type >
 		void push(D && elem) {
-			std::unique_lock<std::mutex> ulock(guard);
-			coll.push(std::forward<D>(elem));		
+			//{
+				std::unique_lock<std::mutex> ulock(guard);
+				coll.push(std::forward<D>(elem));		
+			//}
+			//cvar.notify_one();
 		}
 
 		void pop(T & out) {
@@ -61,9 +63,14 @@ namespace net {
 		}
 
 		//void wait() {
-		//	std::unique_lock<std::mutex> waiter(push_mtx);
-		//	cvar.wait([&waiter]() { return !empty(); });
+			//std::unique_lock<std::mutex> waiter(guard);
+			//cvar.wait(waiter, [this]() { return coll.empty(); });
 		//}	
+
+		//void wait_for(std::size_t nano_or_millis) {
+
+		//}
+
 	};
 
 }

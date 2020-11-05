@@ -102,8 +102,8 @@ public:
 };
 
 void back(sip_client& caller, sip::response&& resp) {
-	std::cout << "got response from " << caller.remote().address() << ":" << caller.remote().port() << " code: " + std::to_string(resp.code()) << "\n";
-	//std::cout << "..\n";
+	//std::cout << "got response from " << caller.remote().address() << ":" << caller.remote().port() << " code: " + std::to_string(resp.code()) << "\n";
+	std::cout << "got response from server: my port is " + std::to_string(resp.code()) << '\n';
 	sip::request req;
 
 	req.set_method(meth)
