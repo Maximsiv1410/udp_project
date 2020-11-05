@@ -76,8 +76,9 @@ public:
 		listener.async_send(resp);
 	}
 
-	void update(std::function<void(sip::request&&)> callback) {
-		listener.update(callback);
+	/////////////////////////////////
+	void poll(std::function<void(sip::request&&)> callback) {
+		listener.poll(callback);
 	}
 
 	void set_callback(std::function<void(sip::request&&)> callback) {
@@ -85,6 +86,9 @@ public:
 	}
 
 	void stop() {
+		/////////////////
+		listener.stop();
+
 		work.reset(nullptr);
 		ios.stop();
 	}
@@ -112,15 +116,23 @@ void back(sip_server& caller, sip::request && req) {
 int main() {
 	setlocale(LC_ALL, "ru");
 
-	sip_server server(4, 6000);
-	server.set_callback([&server](sip::request && req) {
-		back(server, std::move(req));
-	});
+	sip_server server(3, 6000);
+	server.start(false);
 
-	server.start(true);
+	std::thread worker([&server]()
+		{
+			server.poll([&server](sip::request && req)
+				{
+					back(server, std::move(req));
+				});
+		});
+
 
 
 	std::cin.get();
+
+	server.stop();
+	worker.join();
 	return 0;
 }
 

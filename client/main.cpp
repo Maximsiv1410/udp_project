@@ -79,9 +79,6 @@ public:
 		listener.async_send(resp);
 	}
 
-	void update(std::function<void(sip::response&&)> callback) {
-		listener.update(callback);
-	}
 
 	void stop() {
 		ios.stop();

@@ -34,7 +34,11 @@ namespace net {
 		bool notify_mode;
 		bool writing{false};
 		std::/*recursive_*/mutex write_mtx;
+
+		std::atomic<bool> flag{false};
+		
 	public:
+	
 
 		basic_udp_service(io_context& ios, ip::udp::socket& sock)
 			: ios_(ios),
@@ -55,63 +59,32 @@ namespace net {
 		}
 
 
-		/*void poll(std::function<void(input_type&&)> task) {
-			while (!stop.load()) {
+		/////////////////////////////////
+		void stop() {
+			flag.store(true, std::memory_order_relaxed);
+		}
+
+		void poll(std::function<void(input_type&&)> task) {
+			if (notify_mode) return;
+
+			while (!flag.load(std::memory_order_relaxed)) {
 				if (qin.empty()) qin.wait();
 				auto ptr = qin.try_pop();
-				if (ptr) {
+				if (ptr) {					
+					std::cout << "making task\n";
 					task(std::move(*ptr));
+					std::cout << "done task\n";
 				}
 			}
 
-		} */
+		} 
+		////////////////////////////////
 
-		// !deprecate!
-		void update(/*bool wait = false, */std::function<void(input_type&&)> callback) {
-			if (notify_mode) return; // we should only use either update or default callback
-			//if (wait) qin.wait();
-
-			// !note!
-			// callback can fail or drop exception
-			// also it can block execution
-			// that's why probably
-			// we can use just calling thread to
-			// process incoming messages
-			// but also user may want to
-			// process messages simultaneously
-			// so we may need asio::post here
-			//asio::post(ios_, [this, callback] {
-			if (!qin.empty()) {
-				auto item = qin.try_pop();
-				if (item) {
-					callback(std::move(*item));
-				}
-			}
-			//});
-		}
-
-
-		// !deprecate!
-		void async_update(std::function<void(input_type&&)> callback) {
-			if (notify_mode) return; // ??
-
-			asio::post(ios_,
-			[this, callback] 
-			{
-				if (!qin.empty()) {
-					auto item = qin.try_pop();
-					if (item) {
-						callback(std::move(*item));
-					}
-				}
-			});
-		}
 
 		// !deprecate!
 		tsqueue<input_type> & incoming() {
 			return qin;
 		}
-
 
 		void async_send(output_type & res) {
 			qout.push(std::move(res));
@@ -136,7 +109,6 @@ namespace net {
 	private:
 
 		void write() {
-
 			auto ptr = qout.try_pop();
 			if (!ptr) {		
 				std::lock_guard<std::mutex> guard(write_mtx);
@@ -154,7 +126,6 @@ namespace net {
 				if (!ec) {
 					if (bytes) {
 						//std::cout << "written message\n";
-						//std::cout << ".\n";
 						on_write();
 					}
 					else {
@@ -183,8 +154,6 @@ namespace net {
 		}
 
 
-
-
 		void read() {
 			sock_.async_receive_from(asio::buffer(in_buff.data(), in_buff.max_size()), remote_,
 			[this](std::error_code ec, std::size_t bytes) 
@@ -192,7 +161,6 @@ namespace net {
 				if (!ec) {
 					if (bytes) {
 						//std::cout << "read message \n";
-						//std::cout << ",\n";
 						in_buff.set_size(bytes);
 						on_read();
 					}
@@ -210,9 +178,6 @@ namespace net {
 			input_parser parser(in_buff, std::move(remote_));
 			qin.push(parser.parse());
 
-			// !note!
-			// maybe it should be default 
-			// and 'update' should be removed
 			if (notify_mode) {
 				asio::post(ios_,
 				[this] 
@@ -235,10 +200,8 @@ namespace net {
 			read();
 		}
 
-
 	protected:
-		// !note!
-		virtual void on_income() {}
+		//virtual void on_income() {}
 
 	};
 
