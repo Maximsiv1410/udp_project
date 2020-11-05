@@ -92,7 +92,7 @@ namespace net {
 
 			std::size_t total() {
 				std::size_t length = 0;
-				length += version_();
+				length += version_.size();
 				length += 1; // SPACE
 
 				std::string code = std::to_string(code_);
