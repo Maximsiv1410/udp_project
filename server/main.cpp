@@ -75,11 +75,9 @@ public:
 std::atomic<unsigned long long> counter{0};
 void back(sip_server& caller, sip::request && req) {
 
-	//std::cout << "got request from " << req.remote().address() << ":" << req.remote().port() << "\n";
-	//std::cout << ",,\n";
 	sip::response resp;
 	resp.set_version("SIP/2.0")
-		.set_code(200 + counter.load(std::memory_order_relaxed))
+		.set_code(counter.load(std::memory_order_relaxed))
 		//.set_code(req.remote().port())
 		.set_status("OK")
 		.set_body("response from server")
@@ -87,13 +85,14 @@ void back(sip_server& caller, sip::request && req) {
 
 	counter.fetch_add(1, std::memory_order_relaxed);
 
-	if (counter.load(std::memory_order_relaxed) >= 300) {
-		counter.store(0, std::memory_order_relaxed);
-		std::cout << "processed 300 requests\n";
-	}
+	//if (counter.load(std::memory_order_relaxed) >= 300) {
+		//counter.store(0, std::memory_order_relaxed);
+		//std::cout << "processed 300 requests\n";
+	//}
 
-	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	//std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	caller.async_send(resp);
+
 }
 
 
@@ -129,6 +128,7 @@ int main() {
 
 	std::cin.get();
 
+	std::cout << server.total_bytes() << '\n';
 	server.stop();
 	//worker.join();
 	return 0;

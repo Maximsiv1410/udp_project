@@ -6,6 +6,7 @@ using namespace boost;
 using namespace net;
 
 const char* meth = "INVITE";
+
 const char* uri = "sip:smbd@lol.com";
 const char*version = "SIP/2.0";
 const char* left = "Content-Length";
@@ -81,17 +82,10 @@ public:
 
 };
 
-std::atomic<unsigned long long> counter {0};
 void back(sip_client& caller, sip::response&& resp) {
-	counter.fetch_add(1, std::memory_order_relaxed);
-	if (counter.load(std::memory_order_relaxed) >= 300) {
-		std::cout << "got 300 responses\n";
-		counter = 0;
-	}
+
 	//std::cout << "got response from " << caller.remote().address() << ":" << caller.remote().port() << " code: " + std::to_string(resp.code()) << "\n";
-	//std::cout << "got response from server: my port is " + std::to_string(resp.code()) << '\n';
-
-
+	std::cout << "got response from server: my code is " + std::to_string(resp.code()) << '\n';
 
 	sip::request req;
 	req.set_method(meth)
@@ -125,7 +119,6 @@ int main() {
 		client.start(true);
 		client.async_send(req);
 		
-
 
 		std::cin.get();
 

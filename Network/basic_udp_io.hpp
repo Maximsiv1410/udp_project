@@ -34,8 +34,12 @@ namespace net {
 
 		bool notify_mode;
 		
+
+		std::atomic<unsigned long long> bytes_in{0};
 	public:
-	
+		unsigned long long total_bytes() {
+			return bytes_in.load(std::memory_order_relaxed);
+		}
 
 		basic_udp_service(io_context& ios, ip::udp::socket& sock)
 			: 
@@ -77,6 +81,8 @@ namespace net {
 
 
 	private:
+
+
 
 		void write() {
 			output_type message;			
@@ -127,6 +133,8 @@ namespace net {
 					if (bytes) {
 						//std::cout << "read message \n";
 						in_buff.set_size(bytes);
+						
+						bytes_in.fetch_add(bytes, std::memory_order_relaxed);
 						on_read();
 					}
 					else {
