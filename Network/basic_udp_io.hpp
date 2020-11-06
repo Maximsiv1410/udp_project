@@ -70,9 +70,9 @@ namespace net {
 				
 				std::cout << "making task\n";
 				task(std::move(message));
-				std::cout << "done task\n";
-				
+				std::cout << "done task\n";		
 			}
+			std::cout << "poll stopped\n";
 
 		} 
 
@@ -95,6 +95,11 @@ namespace net {
 
 			});
 		}
+
+		//void send(output_type & msg) {
+		//	qout.push(std::move(msg));
+			//write();
+		//}
 
 	private:
 

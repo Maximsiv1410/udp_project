@@ -95,11 +95,19 @@ public:
 
 };
 
+std::atomic<unsigned long long> counter {0};
 void back(sip_client& caller, sip::response&& resp) {
+	counter.fetch_add(1, std::memory_order_relaxed);
+	if (counter.load(std::memory_order_relaxed) >= 100000) {
+		std::cout << "got 100k responses\n";
+		counter = 0;
+	}
 	//std::cout << "got response from " << caller.remote().address() << ":" << caller.remote().port() << " code: " + std::to_string(resp.code()) << "\n";
-	std::cout << "got response from server: my port is " + std::to_string(resp.code()) << '\n';
-	sip::request req;
+	//std::cout << "got response from server: my port is " + std::to_string(resp.code()) << '\n';
 
+
+
+	sip::request req;
 	req.set_method(meth)
 		.set_uri(uri)
 		.set_version(version)
@@ -107,16 +115,14 @@ void back(sip_client& caller, sip::response&& resp) {
 		.set_body(body, strlen(body))
 		.set_remote(caller.remote());
 
-	//std::this_thread::sleep_for(std::chrono::milliseconds(50));
 	caller.async_send(req);
-
 }
 
 
 int main() {
 	setlocale(LC_ALL, "ru");
 
-		sip_client client("127.0.0.1", 4, 6000);
+		sip_client client("127.0.0.1", 1, 6000);
 
 		sip::request req;
 

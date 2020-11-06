@@ -84,16 +84,17 @@ public:
 
 	void stop() {
 		// may be work should be protected somehow?
-		work.reset(nullptr);
+		//work.reset(nullptr);
 		ios.stop();
 	}
+
 
 };
 
 
 std::atomic<unsigned long long> counter{0};
 void back(sip_server& caller, sip::request && req) {
-	std::cout << "got request from " << req.remote().address() << ":" << req.remote().port() << "\n";
+	//std::cout << "got request from " << req.remote().address() << ":" << req.remote().port() << "\n";
 	//std::cout << ",,\n";
 	sip::response resp;
 	resp.set_version("SIP/2.0")
@@ -111,7 +112,9 @@ void back(sip_server& caller, sip::request && req) {
 int main() {
 	setlocale(LC_ALL, "ru");
 
-	sip_server server(2, 6000);
+	sip_server server(1, 6000);
+
+
 
 	server.set_callback(
 	[&server](sip::request && req)
@@ -123,17 +126,18 @@ int main() {
 
 
 
-/*	server.start(false);
+/*
+	server.start(false);
 
 	std::thread worker([&server]()
+	{
+		server.poll([&server](sip::request && req)
 		{
-			server.poll([&server](sip::request && req)
-				{
-					back(server, std::move(req));
-				});
+			back(server, std::move(req));
 		});
-
+	});
 */
+
 
 	std::cin.get();
 
