@@ -8,6 +8,7 @@ namespace net {
 	using namespace boost;
 	using namespace asio;
 
+	// Buffer should be a stack allocated buffer at least 63535 byte-length
 	template <typename Proto, typename Traits, typename Buffer>
 	class basic_udp_service {
 		//// gathering traits of service ////
@@ -18,7 +19,6 @@ namespace net {
 		using buffer = Buffer;
 
 		buffer in_buff;
-
 
 		// provide some align to deny false sharing and improve cache coherency
 		std::function<void(input_type&&)> cback;

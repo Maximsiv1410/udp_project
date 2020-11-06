@@ -17,7 +17,7 @@ namespace net {
 			return buffer_.data();
 		}
 
-		std::size_t  max_size() {
+		std::size_t max_size() {
 			return buffer_.size();
 		}
 

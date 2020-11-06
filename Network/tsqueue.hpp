@@ -95,9 +95,7 @@ namespace net {
 			cvar.wait(waiter, [this]() { return !coll.empty(); });
 		}	
 
-		//void wait_for(std::size_t nano_or_millis) {
-
-		//}
+		
 
 	};
 
