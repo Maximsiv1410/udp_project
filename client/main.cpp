@@ -98,8 +98,8 @@ public:
 std::atomic<unsigned long long> counter {0};
 void back(sip_client& caller, sip::response&& resp) {
 	counter.fetch_add(1, std::memory_order_relaxed);
-	if (counter.load(std::memory_order_relaxed) >= 100000) {
-		std::cout << "got 100k responses\n";
+	if (counter.load(std::memory_order_relaxed) >= 300) {
+		std::cout << "got 300 responses\n";
 		counter = 0;
 	}
 	//std::cout << "got response from " << caller.remote().address() << ":" << caller.remote().port() << " code: " + std::to_string(resp.code()) << "\n";

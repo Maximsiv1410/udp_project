@@ -107,11 +107,12 @@ void back(sip_server& caller, sip::request && req) {
 
 	counter.fetch_add(1, std::memory_order_relaxed);
 
-	if (counter.load(std::memory_order_relaxed) >= 100000) {
+	if (counter.load(std::memory_order_relaxed) >= 300) {
 		counter.store(0, std::memory_order_relaxed);
-		std::cout << "processed 100k requests\n";
+		std::cout << "processed 300 requests\n";
 	}
 
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	caller.async_send(resp);
 }
 
@@ -119,7 +120,7 @@ void back(sip_server& caller, sip::request && req) {
 int main() {
 	setlocale(LC_ALL, "ru");
 
-	sip_server server(1, 6000);
+	sip_server server(4, 6000);
 
 
 

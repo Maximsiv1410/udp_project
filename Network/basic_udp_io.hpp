@@ -22,8 +22,6 @@ namespace net {
 		std::function<void(input_type&&)> cback;
 		std::mutex callback_mtx;
 	
-		buffer out_buff;
-
 		tsqueue<input_type> qin;
 		tsqueue<output_type> qout;
 
@@ -33,8 +31,6 @@ namespace net {
 
 
 		bool notify_mode;
-		bool writing{false};
-		std::/*recursive_*/mutex write_mtx;
 		
 	public:
 	
@@ -67,13 +63,9 @@ namespace net {
 			input_type message;
 			while (!ios_.stopped()) {
 				qin.wait_and_pop(message);
-				
-				std::cout << "making task\n";
+			
 				task(std::move(message));
-				std::cout << "done task\n";		
 			}
-			std::cout << "poll stopped\n";
-
 		} 
 
 		void async_send(output_type & res) {
@@ -122,8 +114,7 @@ namespace net {
 		void on_write() {			
 			if (!qout.empty()) {
 				write();
-			}
-	
+			}	
 		}
 
 
