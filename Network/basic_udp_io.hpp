@@ -19,6 +19,8 @@ namespace net {
 
 		buffer in_buff;
 
+
+		// provide some align to deny false sharing and improve cache coherency
 		std::function<void(input_type&&)> cback;
 		std::mutex callback_mtx;
 	
@@ -51,7 +53,7 @@ namespace net {
 		}
 
 
-		void set_callback(std::function<void(input_type&&)> & callback) {
+		void set_callback(std::function<void(input_type&&)> callback) {
 			std::lock_guard<std::mutex> guard(callback_mtx);
 			cback = std::move(callback);
 		}
@@ -70,7 +72,6 @@ namespace net {
 
 		void async_send(output_type & res) {
 			qout.push(std::move(res));
-
 			asio::post(ios_, [this]{write();});
 		}
 
@@ -81,15 +82,15 @@ namespace net {
 			output_type message;			
 
 			bool attempt = qout.try_pop(message);
-
 			if (!attempt) {		
 				return;
 			}		
 
+			// std::vector<char> should come here as output_buffer
 			std::shared_ptr<std::vector<char>> out(new std::vector<char>);
 			out->resize(message.total());
 			output_builder builder(message);
-			builder.extract_to(*out);
+			builder.extract(*out);
 
 			sock_.async_send_to(asio::buffer(out->data(), out->size()), message.remote(),
 			[this, out](std::error_code ec, std::size_t bytes)

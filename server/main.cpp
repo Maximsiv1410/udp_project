@@ -11,7 +11,7 @@ using namespace boost;
 
 using namespace net;
 
-class sip_server {
+class sip_server : public sip::server {
 	using work_ptr = std::unique_ptr<asio::io_context::work>;
 	using work_entity = asio::io_context::work;
 
@@ -20,18 +20,16 @@ class sip_server {
 	asio::ip::udp::endpoint endpoint;
 	asio::ip::udp::socket sock;
 
-	std::thread ios_thread;
-	sip::server listener;
-
 	std::vector<std::thread> pool;
 
 public:
 	sip_server(std::size_t threads, std::size_t port = 5060)
-		: ios{},
+		: sip::server(ios, sock),
+		ios{},
 		endpoint(asio::ip::udp::v4(), port),
 		sock(ios, endpoint),
-		work(new work_entity(ios)),
-		listener(ios, sock)
+		work(new work_entity(ios))
+		
 	{
 		for (std::size_t i = 0; i < threads; i++) {
 			pool.push_back(std::thread([this]() { ios.run(); }));
@@ -63,24 +61,6 @@ public:
 	}
 
 	asio::io_context& get_io_context() { return ios; }
-
-	void start(bool notifying) {
-		listener.start(notifying);
-	}
-
-
-	void async_send(sip::response & resp) {
-		listener.async_send(resp);
-	}
-
-	/////////////////////////////////
-	void poll(std::function<void(sip::request&&)> callback) {
-		listener.poll(callback);
-	}
-
-	void set_callback(std::function<void(sip::request&&)> callback) {
-		listener.set_callback(callback);
-	}
 
 	void stop() {
 		// may be work should be protected somehow?
