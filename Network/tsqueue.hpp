@@ -7,7 +7,7 @@ namespace net {
 	template <typename T>
 	class tsqueue {
 		std::queue<T> coll;
-		std::mutex guard;
+		mutable std::mutex guard;
 
 		std::condition_variable cvar;
 	public:
@@ -34,6 +34,16 @@ namespace net {
 			return ret;
 		}
 		
+		bool try_pop(T& item) {
+			std::lock_guard<std::mutex> ulock(guard);
+			if (coll.empty()) 
+				return false;
+			item = std::move(coll.front());
+			coll.pop();
+			return true;
+
+		}
+
 		std::shared_ptr<T> try_pop() {
 			std::unique_lock<std::mutex> ulock(guard);
 			if (!coll.empty()) {
@@ -47,12 +57,30 @@ namespace net {
 			}
 		}
 
+		void wait_and_pop(T& item) {
+			std::unique_lock<std::mutex> waiter(guard);
+			cvar.wait(waiter, [this]() { return !coll.empty(); });
+
+			item = std::move(coll.front());
+			coll.pop();
+		}
+
+		std::shared_ptr<T> wait_and_pop() {
+			std::unique_lock<std::mutex> ulock(guard);
+			cvar.wait(ulock, [this]{ return !coll.empty(); });
+
+			auto result = std::make_shared<T>(std::move(coll.front()));
+			coll.pop();
+			return result;
+		}
+
+
 		std::size_t size() {
 			std::unique_lock<std::mutex> ulock(guard);
 			return coll.size();
 		}
 
-		bool empty() {
+		bool empty() const {
 			std::unique_lock<std::mutex> ulock(guard);
 			return coll.empty();
 		}

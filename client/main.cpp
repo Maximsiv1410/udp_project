@@ -71,16 +71,13 @@ public:
 
 	asio::io_context& get_io_context() { return ios; }
 
-	bool has_income() {
-		return !listener.incoming().empty();
-	}
 
 	void async_send(sip::request & resp) {
 		listener.async_send(resp);
 	}
 
-
 	void stop() {
+		work.reset(nullptr);
 		ios.stop();
 	}
 
@@ -118,7 +115,7 @@ void back(sip_client& caller, sip::response&& resp) {
 
 int main() {
 	setlocale(LC_ALL, "ru");
-	try {
+
 		sip_client client("127.0.0.1", 4, 6000);
 
 		sip::request req;
@@ -140,10 +137,7 @@ int main() {
 
 
 		std::cin.get();
-	}
-	catch (std::exception& ex) {
-		std::cout << ex.what() << '\n';
-	}
+
 	return 0;
 
 }

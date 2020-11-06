@@ -68,9 +68,6 @@ public:
 		listener.start(notifying);
 	}
 
-	bool has_income() {
-		return !listener.incoming().empty();
-	}
 
 	void async_send(sip::response & resp) {
 		listener.async_send(resp);
@@ -86,9 +83,7 @@ public:
 	}
 
 	void stop() {
-		/////////////////
-		listener.stop();
-
+		// may be work should be protected somehow?
 		work.reset(nullptr);
 		ios.stop();
 	}
@@ -116,8 +111,19 @@ void back(sip_server& caller, sip::request && req) {
 int main() {
 	setlocale(LC_ALL, "ru");
 
-	sip_server server(3, 6000);
-	server.start(false);
+	sip_server server(2, 6000);
+
+	server.set_callback(
+	[&server](sip::request && req)
+	{
+		back(server, std::move(req));
+	});
+
+	server.start(true);
+
+
+
+/*	server.start(false);
 
 	std::thread worker([&server]()
 		{
@@ -127,12 +133,12 @@ int main() {
 				});
 		});
 
-
+*/
 
 	std::cin.get();
 
 	server.stop();
-	worker.join();
+	//worker.join();
 	return 0;
 }
 

@@ -31,22 +31,24 @@ namespace net {
 		ip::udp::socket& sock_;
 		ip::udp::endpoint remote_;
 
+
 		bool notify_mode;
 		bool writing{false};
 		std::/*recursive_*/mutex write_mtx;
-
-		std::atomic<bool> flag{false};
 		
 	public:
 	
 
 		basic_udp_service(io_context& ios, ip::udp::socket& sock)
-			: ios_(ios),
+			: 
+			ios_(ios),
 			sock_(sock) {
 		}
 
 		virtual ~basic_udp_service() {}
 
+
+		// rename to 'init_read' ?
 		void start(bool notify = false) {
 			notify_mode = notify;
 			read();
@@ -59,32 +61,20 @@ namespace net {
 		}
 
 
-		/////////////////////////////////
-		void stop() {
-			flag.store(true, std::memory_order_relaxed);
-		}
-
 		void poll(std::function<void(input_type&&)> task) {
 			if (notify_mode) return;
 
-			while (!flag.load(std::memory_order_relaxed)) {
-				if (qin.empty()) qin.wait();
-				auto ptr = qin.try_pop();
-				if (ptr) {					
-					std::cout << "making task\n";
-					task(std::move(*ptr));
-					std::cout << "done task\n";
-				}
+			input_type message;
+			while (!ios_.stopped()) {
+				qin.wait_and_pop(message);
+				
+				std::cout << "making task\n";
+				task(std::move(message));
+				std::cout << "done task\n";
+				
 			}
 
 		} 
-		////////////////////////////////
-
-
-		// !deprecate!
-		tsqueue<input_type> & incoming() {
-			return qin;
-		}
 
 		void async_send(output_type & res) {
 			qout.push(std::move(res));
@@ -109,18 +99,19 @@ namespace net {
 	private:
 
 		void write() {
-			auto ptr = qout.try_pop();
-			if (!ptr) {		
-				std::lock_guard<std::mutex> guard(write_mtx);
-				writing = false;
+			output_type message;
+
+			bool attempt = qout.try_pop(message);
+
+			if (!attempt) {		
+				exit_write();
 				return;
 			}		
-
-			auto res = std::move(*ptr);	
-			output_builder builder(res);
+	
+			output_builder builder(message);
 			builder.extract_to(out_buff);
 
-			sock_.async_send_to(asio::buffer(out_buff.data(), out_buff.size()), res.remote(),
+			sock_.async_send_to(asio::buffer(out_buff.data(), out_buff.size()), message.remote(),
 			[this](std::error_code ec, std::size_t bytes)
 			{
 				if (!ec) {
@@ -130,6 +121,7 @@ namespace net {
 					}
 					else {
 						std::cout << "bad write - bytes\n";
+						write();
 					}
 				}
 				else {
@@ -138,19 +130,22 @@ namespace net {
 			});
 		}
 
+		// notify about end of writing
+		void exit_write() {
+			std::lock_guard<std::mutex> guard(write_mtx);
+			writing = false;
+		}
+
 		void on_write() {
 			out_buff.zero();
 
+			// here 100% writing == true
 			if (!qout.empty()) {
-				// no need in mutex
-				// because here we are
-				//guaranteed to be with writing == true
 				write();
 			}
 			else {
-				std::lock_guard<std::/*recursive_*/mutex> guard(write_mtx);
-				writing = false;
-			}
+				exit_write();
+			}	
 		}
 
 
@@ -174,6 +169,10 @@ namespace net {
 			});
 		}
 
+
+		// to think:
+		// notify from service or poll?
+
 		void on_read() {
 			input_parser parser(in_buff, std::move(remote_));
 			qin.push(parser.parse());
@@ -182,15 +181,16 @@ namespace net {
 				asio::post(ios_,
 				[this] 
 				{
-					auto ptr = qin.try_pop();
-					if (ptr) {
+					input_type message;
+					bool attempt = qin.try_pop(message);
+					if (attempt) {
 						std::function<void(input_type&&)> task;
 						{
 							std::lock_guard<std::mutex> guard(callback_mtx);
 							task = cback;
 						}
 						if (task) {
-							task(std::move(*ptr));
+							task(std::move(message));
 						}
 					}
 				});
