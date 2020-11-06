@@ -96,10 +96,6 @@ namespace net {
 			});
 		}
 
-		//void send(output_type & msg) {
-		//	qout.push(std::move(msg));
-			//write();
-		//}
 
 	private:
 
