@@ -119,7 +119,7 @@ void back(sip_server& caller, sip::request && req) {
 int main() {
 	setlocale(LC_ALL, "ru");
 
-	sip_server server(4, 6000);
+	sip_server server(1, 6000);
 
 
 

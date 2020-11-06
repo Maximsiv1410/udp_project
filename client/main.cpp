@@ -122,7 +122,7 @@ void back(sip_client& caller, sip::response&& resp) {
 int main() {
 	setlocale(LC_ALL, "ru");
 
-		sip_client client("127.0.0.1", 4, 6000);
+		sip_client client("127.0.0.1", 1, 6000);
 
 		sip::request req;
 		req.set_method(meth)
