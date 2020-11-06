@@ -377,7 +377,8 @@ namespace net {
 				std::memcpy(output.data() + offset, sipreq.body().data(), sipreq.body().size());
 				offset += sipreq.body().size();
 
-				output.set_size(offset);
+				// bad
+				//output.set_size(offset);
 			}
 
 
@@ -435,7 +436,9 @@ namespace net {
 				std::memcpy(output.data() + offset, sipres.body().data(), sipres.body().size());
 				offset += sipres.body().size();
 
-				output.set_size(offset);
+				// !note!
+				// made for shared_ptr<vector> usage, it's BAD
+				//output.set_size(offset);
 			}
 
 

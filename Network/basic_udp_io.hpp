@@ -78,46 +78,29 @@ namespace net {
 
 		void async_send(output_type & res) {
 			qout.push(std::move(res));
-			asio::post(ios_,
-			[this] 
-			{
-				bool busy = false;
-				{
-					std::lock_guard<std::mutex> guard(write_mtx);
-					busy = writing;
-					if (!writing) {
-						writing = true;
-					}
-				}
-				if (!busy) {
-					write();
-				}
 
-			});
+			asio::post(ios_, [this]{write();});
 		}
 
-		//void send(output_type & msg) {
-		//	qout.push(std::move(msg));
-			//write();
-		//}
 
 	private:
 
 		void write() {
-			output_type message;
+			output_type message;			
 
 			bool attempt = qout.try_pop(message);
 
 			if (!attempt) {		
-				exit_write();
 				return;
 			}		
-	
-			output_builder builder(message);
-			builder.extract_to(out_buff);
 
-			sock_.async_send_to(asio::buffer(out_buff.data(), out_buff.size()), message.remote(),
-			[this](std::error_code ec, std::size_t bytes)
+			std::shared_ptr<std::vector<char>> out(new std::vector<char>);
+			out->resize(message.total());
+			output_builder builder(message);
+			builder.extract_to(*out);
+
+			sock_.async_send_to(asio::buffer(out->data(), out->size()), message.remote(),
+			[this, out](std::error_code ec, std::size_t bytes)
 			{
 				if (!ec) {
 					if (bytes) {
@@ -135,22 +118,12 @@ namespace net {
 			});
 		}
 
-		// notify about end of writing
-		void exit_write() {
-			std::lock_guard<std::mutex> guard(write_mtx);
-			writing = false;
-		}
 
-		void on_write() {
-			out_buff.zero();
-
-			// here 100% writing == true
+		void on_write() {			
 			if (!qout.empty()) {
 				write();
 			}
-			else {
-				exit_write();
-			}	
+	
 		}
 
 
