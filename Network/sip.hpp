@@ -383,6 +383,42 @@ namespace net {
 
 			void extract(std::vector<char> & buffer) {
 				std::size_t length = sipreq.total();
+				buffer.resize(length);
+
+				std::size_t offset = 0;
+				std::memcpy(buffer.data() + offset, sipreq.method().data(), sipreq.method().size());
+				offset += sipreq.method().size();
+				buffer[offset] = ' ';
+				offset += 1;
+
+				std::memcpy(buffer.data() + offset, sipreq.uri().data(), sipreq.uri().size());
+				offset += sipreq.uri().size();
+				buffer[offset] = ' ';
+				offset += 1;
+
+				std::memcpy(buffer.data() + offset, sipreq.version().data(), sipreq.version().size());
+				offset += sipreq.version().size();
+				std::memcpy(buffer.data() + offset, CRLF, 2);
+				offset += 2;
+
+				for (auto & header : sipreq.headers()) {
+					std::memcpy(buffer.data() + offset, header.first.data(), header.first.size());
+					offset += header.first.size();
+
+					std::memcpy(buffer.data() + offset, ": ", 2);
+					offset += 2;
+
+					std::memcpy(buffer.data() + offset, header.second.data(), header.second.size());
+					offset += header.second.size();
+
+					std::memcpy(buffer.data() + offset, CRLF, 2);
+					offset += 2;
+				}
+				std::memcpy(buffer.data() + offset, CRLF, 2);
+				offset += 2;
+
+				std::memcpy(buffer.data() + offset, sipreq.body().data(), sipreq.body().size());
+				offset += sipreq.body().size();
 			}
 		};
 
@@ -395,6 +431,7 @@ namespace net {
 
 			response_builder(response & res) : sipres(res) {}
 
+			// for custom buffers
 			template <typename Buffer>
 			void extract_to(Buffer && output) {
 				std::size_t offset = 0;
@@ -403,13 +440,11 @@ namespace net {
 				output[offset] = ' ';
 				offset += 1;
 
-
 				std::string code = std::to_string(sipres.code());
 				std::memcpy(output.data() + offset, code.data(), code.size());
 				offset += code.size();
 				output[offset] = ' ';
 				offset += 1;
-
 
 				std::memcpy(output.data() + offset, sipres.status().data(), sipres.status().size());
 				offset += sipres.status().size();
@@ -438,10 +473,46 @@ namespace net {
 				output.set_size(offset);
 			}
 
-
+			// for std vector
 			void extract(std::vector<char> & buffer) {
 				std::size_t length = sipres.total();
+				buffer.resize(length);
 				
+				std::size_t offset = 0;
+				std::memcpy(buffer.data() + offset, sipres.version().data(), sipres.version().size());
+				offset += sipres.version().size();
+				buffer[offset] = ' ';
+				offset += 1;
+
+				std::string code = std::to_string(sipres.code());
+				std::memcpy(buffer.data() + offset, code.data(), code.size());
+				offset += code.size();
+				buffer[offset] = ' ';
+				offset += 1;
+
+				std::memcpy(buffer.data() + offset, sipres.status().data(), sipres.status().size());
+				offset += sipres.status().size();
+				std::memcpy(buffer.data() + offset, CRLF, 2);
+				offset += 2;
+
+				for (auto & header : sipres.headers()) {
+					std::memcpy(buffer.data() + offset, header.first.data(), header.first.size());
+					offset += header.first.size();
+
+					std::memcpy(buffer.data() + offset, ": ", 2);
+					offset += 2;
+
+					std::memcpy(buffer.data() + offset, header.second.data(), header.second.size());
+					offset += header.second.size();
+
+					std::memcpy(buffer.data() + offset, CRLF, 2);
+					offset += 2;
+				}
+				std::memcpy(buffer.data() + offset, CRLF, 2);
+				offset += 2;
+
+				std::memcpy(buffer.data() + offset, sipres.body().data(), sipres.body().size());
+				offset += sipres.body().size();
 			}
 		};
 
@@ -475,8 +546,6 @@ namespace net {
 			using input_parser = response_parser<T>;
 
 			using output_builder = request_builder;
-
-			//using send_method = asio::ip::udp::socket::async_send;
 		};
 
 		using client = basic_udp_service<sip, client_traits, buffer>;

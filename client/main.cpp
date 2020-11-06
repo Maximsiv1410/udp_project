@@ -13,7 +13,7 @@ const char* right = "5";
 const char*body = "hello";
 
 
-class sip_client {
+class sip_client : public sip::client {
 	using work_ptr = std::unique_ptr<asio::io_context::work>;
 	using work_entity = asio::io_context::work;
 
@@ -24,18 +24,16 @@ class sip_client {
 	asio::ip::udp::endpoint remote_;
 	asio::ip::udp::socket sock;
 
-	sip::client listener;
-
-
 	std::vector<std::thread> pool;
 
 public:
 	sip_client(std::string address, std::size_t threads, std::size_t port = 5060)
-		: ios{},
+		: 
+		sip::client(ios, sock),
+		ios{},
 		remote_(asio::ip::address::from_string(address), port),
 		sock(ios),
-		work(new work_entity(ios)),
-		listener(ios, sock)
+		work(new work_entity(ios))	
 	{
 		sock.open(asio::ip::udp::v4());
 		sock.connect(remote_);
@@ -71,11 +69,6 @@ public:
 
 	asio::io_context& get_io_context() { return ios; }
 
-
-	void async_send(sip::request & resp) {
-		listener.async_send(resp);
-	}
-
 	void stop() {
 		work.reset(nullptr);
 		ios.stop();
@@ -85,21 +78,14 @@ public:
 		return ios.stopped();
 	}
 
-	void start(bool notifying) {
-		listener.start(notifying);
-	}
-
-	void set_callback(std::function<void(sip::response&&)> callback) {
-		listener.set_callback(callback);
-	}
 
 };
 
 std::atomic<unsigned long long> counter {0};
 void back(sip_client& caller, sip::response&& resp) {
 	counter.fetch_add(1, std::memory_order_relaxed);
-	if (counter.load(std::memory_order_relaxed) >= 100000) {
-		std::cout << "got 100k responses\n";
+	if (counter.load(std::memory_order_relaxed) >= 300) {
+		std::cout << "got 300 responses\n";
 		counter = 0;
 	}
 	//std::cout << "got response from " << caller.remote().address() << ":" << caller.remote().port() << " code: " + std::to_string(resp.code()) << "\n";
@@ -125,7 +111,6 @@ int main() {
 		sip_client client("127.0.0.1", 1, 6000);
 
 		sip::request req;
-
 		req.set_method(meth)
 			.set_uri(uri)
 			.set_version(version)
@@ -138,8 +123,8 @@ int main() {
 			back(client, std::move(res));
 		});
 		client.start(true);
-
 		client.async_send(req);
+		
 
 
 		std::cin.get();

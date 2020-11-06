@@ -19,11 +19,11 @@ namespace net {
 
 		buffer in_buff;
 
+
+		// provide some align to deny false sharing and improve cache coherency
 		std::function<void(input_type&&)> cback;
 		std::mutex callback_mtx;
 	
-		buffer out_buff;
-
 		tsqueue<input_type> qin;
 		tsqueue<output_type> qout;
 
@@ -33,8 +33,6 @@ namespace net {
 
 
 		bool notify_mode;
-		bool writing{false};
-		std::/*recursive_*/mutex write_mtx;
 		
 	public:
 	
@@ -55,7 +53,7 @@ namespace net {
 		}
 
 
-		void set_callback(std::function<void(input_type&&)> & callback) {
+		void set_callback(std::function<void(input_type&&)> callback) {
 			std::lock_guard<std::mutex> guard(callback_mtx);
 			cback = std::move(callback);
 		}
@@ -67,53 +65,35 @@ namespace net {
 			input_type message;
 			while (!ios_.stopped()) {
 				qin.wait_and_pop(message);
-				
-				std::cout << "making task\n";
+			
 				task(std::move(message));
-				std::cout << "done task\n";		
 			}
-			std::cout << "poll stopped\n";
-
 		} 
 
 		void async_send(output_type & res) {
 			qout.push(std::move(res));
-			asio::post(ios_,
-			[this] 
-			{
-				bool busy = false;
-				{
-					std::lock_guard<std::mutex> guard(write_mtx);
-					busy = writing;
-					if (!writing) {
-						writing = true;
-					}
-				}
-				if (!busy) {
-					write();
-				}
-
-			});
+			asio::post(ios_, [this]{write();});
 		}
 
 
 	private:
 
 		void write() {
-			output_type message;
+			output_type message;			
 
 			bool attempt = qout.try_pop(message);
-
 			if (!attempt) {		
-				exit_write();
 				return;
 			}		
-	
-			output_builder builder(message);
-			builder.extract_to(out_buff);
 
-			sock_.async_send_to(asio::buffer(out_buff.data(), out_buff.size()), message.remote(),
-			[this](std::error_code ec, std::size_t bytes)
+			// std::vector<char> should come here as output_buffer
+			std::shared_ptr<std::vector<char>> out(new std::vector<char>);
+			out->resize(message.total());
+			output_builder builder(message);
+			builder.extract(*out);
+
+			sock_.async_send_to(asio::buffer(out->data(), out->size()), message.remote(),
+			[this, out](std::error_code ec, std::size_t bytes)
 			{
 				if (!ec) {
 					if (bytes) {
@@ -131,21 +111,10 @@ namespace net {
 			});
 		}
 
-		// notify about end of writing
-		void exit_write() {
-			std::lock_guard<std::mutex> guard(write_mtx);
-			writing = false;
-		}
 
-		void on_write() {
-			out_buff.zero();
-
-			// here 100% writing == true
+		void on_write() {			
 			if (!qout.empty()) {
 				write();
-			}
-			else {
-				exit_write();
 			}	
 		}
 
