@@ -7,7 +7,7 @@ using namespace boost;
 #include <iostream>
 
 #include <functional>
-#include "../Network/sip.hpp"
+#include "../Network/sip/sip.hpp"
 
 using namespace net;
 

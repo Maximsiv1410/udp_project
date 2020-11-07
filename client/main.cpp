@@ -1,5 +1,5 @@
 #include <boost/asio.hpp>
-#include "../Network/sip.hpp"
+#include "../Network/sip/sip.hpp"
 #include <iostream>
 
 using namespace boost;
@@ -102,25 +102,25 @@ void back(sip_client& caller, sip::response&& resp) {
 int main() {
 	setlocale(LC_ALL, "ru");
 
-		sip_client client("127.0.0.1", 1, 6000);
+	sip_client client("127.0.0.1", 1, 6000);
 
-		sip::request req;
-		req.set_method(meth)
-			.set_uri(uri)
-			.set_version(version)
-			.add_header(left, right)
-			.set_body(body, strlen(body))
-			.set_remote(client.remote());
+	sip::request req;
+	req.set_method(meth)
+		.set_uri(uri)
+		.set_version(version)
+		.add_header(left, right)
+		.set_body(body, strlen(body))
+		.set_remote(client.remote());
 
 
-		client.set_callback([&client](sip::response && res) {
-			back(client, std::move(res));
-		});
-		client.start(true);
-		client.async_send(req);
+	client.set_callback([&client](sip::response && res) {
+		back(client, std::move(res));
+	});
+	client.start(true);
+	client.async_send(req);
 		
 
-		std::cin.get();
+	std::cin.get();
 
 	return 0;
 
