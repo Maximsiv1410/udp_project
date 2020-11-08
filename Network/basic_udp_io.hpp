@@ -18,6 +18,8 @@ namespace net {
 		using output_builder = typename Traits::output_builder;
 		using buffer = Buffer;
 
+
+
 		buffer in_buff;
 
 		// provide some align to deny false sharing and improve cache coherency
@@ -93,7 +95,7 @@ namespace net {
 			}		
 
 			// std::vector<char> should come here as output_buffer
-			std::shared_ptr<std::vector<char>> out(new std::vector<char>);
+			std::shared_ptr<std::vector<char>> out(std::make_shared<std::vector<char>>());
 			out->resize(message.total());
 			output_builder builder(message);
 			builder.extract(*out);

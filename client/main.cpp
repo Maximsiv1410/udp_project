@@ -82,20 +82,23 @@ public:
 
 };
 
-void back(sip_client& caller, sip::response&& resp) {
+void back(sip_client& caller, sip::packet && message) {
+	if (message.type() == sip::sip_type::Response) {
+		sip::response resp = (sip::response&&)std::move(message);
+		//std::cout << "got response from " << caller.remote().address() << ":" << caller.remote().port() << " code: " + std::to_string(resp.code()) << "\n";
+		//std::cout << "got response from server: my code is " + std::to_string(resp.code()) << '\n';
 
-	//std::cout << "got response from " << caller.remote().address() << ":" << caller.remote().port() << " code: " + std::to_string(resp.code()) << "\n";
-	std::cout << "got response from server: my code is " + std::to_string(resp.code()) << '\n';
+		sip::request req;
+		req.set_method(meth)
+			.set_uri(uri)
+			.set_version(version)
+			.add_header(left, right)
+			.set_body(body, strlen(body))
+			.set_remote(caller.remote());
 
-	sip::request req;
-	req.set_method(meth)
-		.set_uri(uri)
-		.set_version(version)
-		.add_header(left, right)
-		.set_body(body, strlen(body))
-		.set_remote(caller.remote());
-
-	caller.async_send(req);
+		sip::packet_wrapper wrapper{std::make_unique<sip::request>(std::move(req))};
+		caller.async_send(wrapper);
+	}
 }
 
 
@@ -113,11 +116,14 @@ int main() {
 		.set_remote(client.remote());
 
 
-	client.set_callback([&client](sip::response && res) {
-		back(client, std::move(res));
+	client.set_callback([&client](sip::packet_wrapper && wrappie) {
+		back(client, std::move(*wrappie.storage()));
 	});
 	client.start(true);
-	client.async_send(req);
+
+
+	sip::packet_wrapper wrapper(std::make_unique<sip::request>(std::move(req)));
+	client.async_send(wrapper);
 		
 
 	std::cin.get();

@@ -1,14 +1,10 @@
 #pragma once
 
 
-#include "request.hpp"
-#include "response.hpp"
+#include "packet.hpp"
 
-#include "request_parser.hpp"
-#include "response_parser.hpp"
-
-#include "request_builder.hpp"
-#include "response_builder.hpp"
+#include "parser.hpp"
+#include "builder.hpp"
 
 #include "../basic_udp_io.hpp"
 #include "../buffer.hpp"
@@ -22,24 +18,24 @@ namespace net {
 
 		class server_traits {
 		public:
-			using input_type = request;
-			using output_type = response;
+			using input_type = packet_wrapper;
+			using output_type = packet_wrapper;
 
 			template<typename T>
-			using input_parser = request_parser<T>;
+			using input_parser = parser<T>;
 
-			using output_builder = response_builder;
+			using output_builder = builder;
 		};
 
 		class client_traits {
 		public:
-			using input_type = response;
-			using output_type = request;
+			using input_type = packet_wrapper;
+			using output_type = packet_wrapper;
 
 			template<typename T>
-			using input_parser = response_parser<T>;
+			using input_parser = parser<T>;
 
-			using output_builder = request_builder;
+			using output_builder = builder;
 		};
 
 		using client = basic_udp_service<sip, client_traits, buffer>;

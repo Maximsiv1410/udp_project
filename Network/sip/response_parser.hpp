@@ -4,6 +4,7 @@
 #include "sip_dependency.hpp"
 #include "sdp.hpp"
 
+#include "response.hpp"
 #include "../memstream.hpp"
 
 using namespace boost;
@@ -21,7 +22,7 @@ namespace net {
 			{
 			}
 
-			response parse() {
+			std::unique_ptr<response> parse() {
 				response resp;
 				/*resp.set_remote(std::move(endpoint));*/
 
@@ -52,7 +53,7 @@ namespace net {
 				resp.body().resize(buffer.size() - diff - 4);
 				std::memcpy(resp.body().data(), bodyptr + 4, resp.body().size());
 
-				return resp;
+				return std::make_unique<response>(std::move(resp));
 			}
 
 		};

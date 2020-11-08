@@ -2,7 +2,7 @@
 
 
 #include "sip_dependency.hpp"
-#include "sdp.hpp"
+#include "request.hpp"
 
 #include "../memstream.hpp"
 
@@ -20,18 +20,18 @@ namespace net {
 				endpoint(std::move(ep)) 
 			{}
 
-			request parse() {
-				request request;
-				request.remote() = std::move(endpoint);
+			std::unique_ptr<request> parse() {
+				request req;
+				req.remote() = std::move(endpoint);
 
 				auto bodyptr = strstr(buffer.data(), "\r\n\r\n");
 				auto diff = bodyptr - buffer.data();
 
 				imemstream in(buffer.data(), diff);
 
-				in >> request.method();
-				in >> request.uri();
-				in >> request.version();
+				in >> req.method();
+				in >> req.uri();
+				in >> req.version();
 
 				in.ignore(2);
 
@@ -44,16 +44,16 @@ namespace net {
 						std::getline(in, header_value, '\r');
 						in.get();
 
-						request.add_header(header_name, header_value);
+						req.add_header(header_name, header_value);
 					}
 				}
 
 				// shoudl be SDP parsing here, but now skipped this
 
-				request.body().resize(buffer.size() - diff - 4);
-				std::memcpy(request.body().data(), bodyptr + 4, request.body().size());
+				req.body().resize(buffer.size() - diff - 4);
+				std::memcpy(req.body().data(), bodyptr + 4, req.body().size());
 
-				return request;
+				return std::make_unique<request>(std::move(req));
 			}
 		};
 	}

@@ -73,26 +73,28 @@ public:
 
 
 std::atomic<unsigned long long> counter{0};
-void back(sip_server& caller, sip::request && req) {
+void back(sip_server& caller, sip::packet && message) {
+	if (message.type() == sip::sip_type::Request) {
+		sip::request req = (sip::request&&)std::move(message);
+		sip::response resp;
+		resp.set_version("SIP/2.0")
+			.set_code(counter.load(std::memory_order_relaxed))
+			//.set_code(req.remote().port())
+			.set_status("OK")
+			.set_body("response from server")
+			.set_remote(req.remote());
 
-	sip::response resp;
-	resp.set_version("SIP/2.0")
-		.set_code(counter.load(std::memory_order_relaxed))
-		//.set_code(req.remote().port())
-		.set_status("OK")
-		.set_body("response from server")
-		.set_remote(req.remote());
+		counter.fetch_add(1, std::memory_order_relaxed);
 
-	counter.fetch_add(1, std::memory_order_relaxed);
+		//if (counter.load(std::memory_order_relaxed) >= 300) {
+			//counter.store(0, std::memory_order_relaxed);
+			//std::cout << "processed 300 requests\n";
+		//}
 
-	//if (counter.load(std::memory_order_relaxed) >= 300) {
-		//counter.store(0, std::memory_order_relaxed);
-		//std::cout << "processed 300 requests\n";
-	//}
-
-	//std::this_thread::sleep_for(std::chrono::milliseconds(100));
-	caller.async_send(resp);
-
+		//std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		sip::packet_wrapper wrapper(std::make_unique<sip::response>(std::move(resp)));
+		caller.async_send(wrapper);
+	}
 }
 
 
@@ -104,9 +106,9 @@ int main() {
 
 
 	server.set_callback(
-	[&server](sip::request && req)
+	[&server](sip::packet_wrapper && wrappie)
 	{
-		back(server, std::move(req));
+		back(server, std::move(*wrappie.storage()));
 	});
 
 	server.start(true);
