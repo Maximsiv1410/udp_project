@@ -18,8 +18,6 @@ namespace net {
 		using output_builder = typename Traits::output_builder;
 		using buffer = Buffer;
 
-
-
 		buffer in_buff;
 
 		// provide some align to deny false sharing and improve cache coherency
@@ -33,12 +31,13 @@ namespace net {
 		ip::udp::socket& sock_;
 		ip::udp::endpoint remote_;
 
+		std::unique_ptr<io_context::strand> strandie;
 
 		bool notify_mode;
-		
-
+	
 		std::atomic<unsigned long long> bytes_in{0};
 	public:
+
 		unsigned long long total_bytes() {
 			return bytes_in.load(std::memory_order_relaxed);
 		}
@@ -46,24 +45,24 @@ namespace net {
 		basic_udp_service(io_context& ios, ip::udp::socket& sock)
 			: 
 			ios_(ios),
-			sock_(sock) {
-		}
+			sock_(sock) 
+			{}
 
 		virtual ~basic_udp_service() {}
-
 
 		// rename to 'init_read' ?
 		void start(bool notify = false) {
 			notify_mode = notify;
+			if (notify) { 
+				strandie = std::make_unique<io_context::strand>(ios_); 
+			} // bad?
 			read();
 		}
-
 
 		void set_callback(std::function<void(input_type&&)> callback) {
 			std::lock_guard<std::mutex> guard(callback_mtx);
 			cback = std::move(callback);
 		}
-
 
 		void poll(std::function<void(input_type&&)> task) {
 			if (notify_mode) return;
@@ -81,10 +80,7 @@ namespace net {
 			asio::post(ios_, [this]{write();});
 		}
 
-
 	private:
-
-
 
 		void write() {
 			output_type message;			
@@ -157,7 +153,32 @@ namespace net {
 			input_parser parser(in_buff, std::move(remote_));
 			qin.push(parser.parse());
 
-			if (notify_mode) {
+			//should callback be called sequentially or simultaneously?????
+			// strand reduces speed of processing callbacks
+			// but if writer-threads are busy too long
+			// this tactics are beneficial
+			// because this service allows multiple 'send' operations at a time
+
+			if (notify_mode && strandie) {
+				// callback will be called only after previous call end
+				strandie->post(
+				[this]
+				{
+					input_type message;
+					bool attempt = qin.try_pop(message);
+					if (attempt) {
+						std::function<void(input_type&&)> task;
+						{
+							std::lock_guard<std::mutex> guard(callback_mtx);
+							task = cback;
+						}
+						if (task) {
+							task(std::move(message));
+						}
+					}
+				});
+
+				/*
 				asio::post(ios_,
 				[this] 
 				{
@@ -174,6 +195,7 @@ namespace net {
 						}
 					}
 				});
+				*/
 			}
 
 			in_buff.zero();
@@ -181,6 +203,13 @@ namespace net {
 		}
 
 	protected:
+		// here is possible
+		// analogue for std function<input_Type> callback's
+
+		// idea is to call overwritten 'on_income'
+		// on every 'on_read' event
+		// where must be some logic 
+
 		//virtual void on_income() {}
 
 	};

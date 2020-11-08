@@ -14,7 +14,7 @@ namespace net {
 			Request
 		};
 
-		class packet {
+		class message {
 			protected:
 				sdp sdp_;
 				asio::ip::udp::endpoint remote_;
@@ -23,13 +23,13 @@ namespace net {
 				std::vector<char> body_; // later it will be SDP
 
 			public:
-				packet() = default;
-				packet(packet&&) = default;
-				packet & operator=(packet&&) = default;
-				virtual ~packet() {}
+				message() = default;
+				message(message&&) = default;
+				message & operator=(message&&) = default;
+				virtual ~message() {}
 
-				packet & set_remote(const asio::ip::udp::endpoint& remote) { remote_ = remote; return *this; }
-				packet & set_remote(asio::ip::udp::endpoint&& remote) { remote_ = std::move(remote); return *this; }
+				message & set_remote(const asio::ip::udp::endpoint& remote) { remote_ = remote; return *this; }
+				message & set_remote(asio::ip::udp::endpoint&& remote) { remote_ = std::move(remote); return *this; }
 
 				asio::ip::udp::endpoint & remote() & { return remote_; }
 
@@ -37,21 +37,21 @@ namespace net {
 
 				std::vector<char> & body() { return body_; }
 
-				packet & set_body(const std::string & input) {
+				message & set_body(const std::string & input) {
 					body_.resize(input.size());
 					std::memcpy(body_.data(), input.data(), input.size());
 
 					return *this;
 				}
 
-				packet & set_body(const char* input, std::size_t size) {
+				message & set_body(const char* input, std::size_t size) {
 					body_.resize(size);
 					std::memcpy(body_.data(), input, size);
 
 					return *this;
 				}
 
-				packet &  append_body(std::string & input) {
+				message &  append_body(std::string & input) {
 					auto was = body_.size();
 					body_.resize(was + input.size());
 					std::memcpy(body_.data() + was, input.data(), input.size());
@@ -59,13 +59,13 @@ namespace net {
 					return *this;
 				}
 
-				packet & add_header(std::string & left, std::string & right) {
+				message & add_header(std::string & left, std::string & right) {
 					headers_[left] = right;
 
 					return *this;
 				}
 
-				packet & add_header(const char* left, const char* right) {
+				message & add_header(const char* left, const char* right) {
 					headers_[left] = right;
 
 					return *this;
@@ -92,19 +92,19 @@ namespace net {
 		};
 
 
-		class packet_wrapper {
-			std::unique_ptr<packet> storage_{nullptr};
+		class message_wrapper {
+			std::unique_ptr<message> storage_{nullptr};
 		public:
 
-			packet_wrapper(std::unique_ptr<packet> in) : storage_(std::move(in)) {}
-			packet_wrapper() = default;
-			packet_wrapper(packet_wrapper&&) = default;
-			packet_wrapper & operator=(packet_wrapper&&) = default;
+			message_wrapper(std::unique_ptr<message> in) : storage_(std::move(in)) {}
+			message_wrapper() = default;
+			message_wrapper(message_wrapper&&) = default;
+			message_wrapper & operator=(message_wrapper&&) = default;
 
 			asio::ip::udp::endpoint & remote() { return storage_->remote(); }
 			std::size_t total() { return storage_->total(); }
 
-			std::unique_ptr<packet> & storage() { return storage_; }
+			std::unique_ptr<message> & storage() { return storage_; }
 		};
 	}
 }

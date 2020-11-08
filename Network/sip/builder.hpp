@@ -2,7 +2,7 @@
 
 
 #include "sip_dependency.hpp"
-#include "packet.hpp"
+#include "message.hpp"
 
 #include "request_builder.hpp"
 #include "response_builder.hpp"
@@ -12,9 +12,9 @@ using namespace boost;
 namespace net {
 	namespace sip {
 		class builder {
-			packet_wrapper & sippack;
+			message_wrapper & sippack;
 		public:
-			builder(packet_wrapper & wrapper) : sippack(wrapper) {}
+			builder(message_wrapper & wrapper) : sippack(wrapper) {}
 
 			template <typename Buffer>
 			void extract_to(Buffer & buff) {

@@ -1,3 +1,4 @@
+
 #include <boost/asio.hpp>
 using namespace boost;
 
@@ -24,8 +25,8 @@ class sip_server : public sip::server {
 
 public:
 	sip_server(std::size_t threads, std::size_t port = 5060)
-		: sip::server(ios, sock),
-		ios{},
+		: ios{},
+		sip::server(ios, sock),
 		endpoint(asio::ip::udp::v4(), port),
 		sock(ios, endpoint),
 		work(new work_entity(ios))
@@ -72,10 +73,11 @@ public:
 };
 
 
+
 std::atomic<unsigned long long> counter{0};
-void back(sip_server& caller, sip::packet && message) {
-	if (message.type() == sip::sip_type::Request) {
-		sip::request req = (sip::request&&)std::move(message);
+void back(sip_server& caller, sip::message && msg) {
+	if (msg.type() == sip::sip_type::Request) {
+		sip::request && req = (sip::request&&)std::move(msg);
 		sip::response resp;
 		resp.set_version("SIP/2.0")
 			.set_code(counter.load(std::memory_order_relaxed))
@@ -86,14 +88,15 @@ void back(sip_server& caller, sip::packet && message) {
 
 		counter.fetch_add(1, std::memory_order_relaxed);
 
-		//if (counter.load(std::memory_order_relaxed) >= 300) {
-			//counter.store(0, std::memory_order_relaxed);
-			//std::cout << "processed 300 requests\n";
-		//}
 
-		//std::this_thread::sleep_for(std::chrono::milliseconds(100));
-		sip::packet_wrapper wrapper(std::make_unique<sip::response>(std::move(resp)));
+		std::cout << "sending code " + std::to_string(resp.code()) + " to port: " + std::to_string(req.remote().port()) + "\n";
+
+		sip::message_wrapper wrapper(std::make_unique<sip::response>(std::move(resp)));
 		caller.async_send(wrapper);
+	} 
+	else if (msg.type() == sip::sip_type::Response) {
+		sip::response && resp = (sip::response &&)std::move(msg);
+		// process
 	}
 }
 
@@ -106,7 +109,7 @@ int main() {
 
 
 	server.set_callback(
-	[&server](sip::packet_wrapper && wrappie)
+	[&server](sip::message_wrapper && wrappie)
 	{
 		back(server, std::move(*wrappie.storage()));
 	});

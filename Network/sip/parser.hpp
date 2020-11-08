@@ -2,7 +2,7 @@
 
 
 #include "sip_dependency.hpp"
-#include "packet.hpp"
+#include "message.hpp"
 
 #include "request_parser.hpp"
 #include "response_parser.hpp"
@@ -21,15 +21,15 @@ namespace net {
 		public:
 			parser(Buffer & buff, asio::ip::udp::endpoint&& rem) : buffer(buff), remote(std::move(rem)) {}
 
-			packet_wrapper parse() {
+			message_wrapper parse() {
 				if (buffer[0] == 'S') // check for 'SIP/2.0'
 				{
 					response_parser<Buffer> parser(buffer, std::move(remote));
-					return packet_wrapper{parser.parse()};
+					return message_wrapper{parser.parse()};
 				}
 				else {
 					request_parser<Buffer> parser(buffer, std::move(remote));
-					return packet_wrapper{parser.parse()};
+					return message_wrapper{parser.parse()};
 				}
 			}
 		};

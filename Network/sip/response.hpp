@@ -3,12 +3,13 @@
 
 #include "sip_dependency.hpp"
 #include "sdp.hpp"
+#include "message.hpp"
 
 using namespace boost;
 
 namespace net {
 	namespace sip {
-		class response : public packet {
+		class response : public message {
 
 			std::size_t code_;
 			std::string version_;
@@ -38,7 +39,7 @@ namespace net {
 			sip_type type() override { return sip_type::Response; }
 
 			std::size_t total() {				
-				std::size_t length = packet::total();
+				std::size_t length = message::total();
 
 				length += version_.size();
 				length += 1; // SPACE

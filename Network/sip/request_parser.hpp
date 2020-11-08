@@ -16,7 +16,8 @@ namespace net {
 			asio::ip::udp::endpoint endpoint;
 		public:
 			request_parser(Buffer & buff, asio::ip::udp::endpoint && ep) 
-				: buffer(buff), 
+				: 
+				buffer(buff), 
 				endpoint(std::move(ep)) 
 			{}
 

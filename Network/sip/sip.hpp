@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include "packet.hpp"
+#include "message.hpp"
 
 #include "parser.hpp"
 #include "builder.hpp"
@@ -18,8 +18,8 @@ namespace net {
 
 		class server_traits {
 		public:
-			using input_type = packet_wrapper;
-			using output_type = packet_wrapper;
+			using input_type = message_wrapper;
+			using output_type = message_wrapper;
 
 			template<typename T>
 			using input_parser = parser<T>;
@@ -29,8 +29,8 @@ namespace net {
 
 		class client_traits {
 		public:
-			using input_type = packet_wrapper;
-			using output_type = packet_wrapper;
+			using input_type = message_wrapper;
+			using output_type = message_wrapper;
 
 			template<typename T>
 			using input_parser = parser<T>;

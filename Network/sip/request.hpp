@@ -1,7 +1,7 @@
 #pragma once
 
 #include "sip_dependency.hpp"
-#include "packet.hpp"
+#include "message.hpp"
 #include "sdp.hpp"
 
 using namespace boost;
@@ -9,7 +9,7 @@ using namespace boost;
 
 namespace net {
 	namespace sip {
-		class request : public packet {
+		class request : public message {
 			std::string method_;
 			std::string uri_;
 			std::string version_;
@@ -40,7 +40,7 @@ namespace net {
 			sip_type type() override { return sip_type::Request; }
 			
 			std::size_t total() {
-				std::size_t length = packet::total();
+				std::size_t length = message::total();
 				length += method_.size();
 				length += 1; // SPACE
 
