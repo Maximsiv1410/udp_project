@@ -13,18 +13,18 @@ namespace net {
 	namespace sip {
 		template<typename Buffer>
 		class response_parser {
-			Buffer & buffer;/*
-			asio::ip::udp::endpoint endpoint;*/
+			Buffer & buffer;
+			asio::ip::udp::endpoint endpoint;
 		public:
 			response_parser(Buffer & buff, asio::ip::udp::endpoint && ep)
-				: buffer(buff)/*,
-				endpoint(std::move(ep)) */	
+				: buffer(buff),
+				endpoint(std::move(ep)) 	
 			{
 			}
 
 			std::unique_ptr<response> parse() {
 				response resp;
-				/*resp.set_remote(std::move(endpoint));*/
+				resp.set_remote(std::move(endpoint));
 
 				auto bodyptr = strstr(buffer.data(), "\r\n\r\n");
 				auto diff = bodyptr - buffer.data();

@@ -89,7 +89,7 @@ void back(sip_server& caller, sip::message && msg) {
 		counter.fetch_add(1, std::memory_order_relaxed);
 
 
-		std::cout << "sending code " + std::to_string(resp.code()) + " to port: " + std::to_string(req.remote().port()) + "\n";
+		//std::cout << "sending code " + std::to_string(resp.code()) + " to port: " + std::to_string(req.remote().port()) + "\n";
 
 		sip::message_wrapper wrapper(std::make_unique<sip::response>(std::move(resp)));
 		caller.async_send(wrapper);
