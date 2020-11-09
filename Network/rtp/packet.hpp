@@ -3,7 +3,7 @@
 namespace net {
 	namespace realtime {
 
-		struct rtp_header {
+		class rtp_header {
 			typedef unsigned char uchar;
 
 			unsigned char version_ : 2;          // version (V): 2 bits
@@ -17,6 +17,7 @@ namespace net {
 			std::uint32_t timestamp_;            // timestamp: 32 bits
 			std::uint32_t ssrc_;                 // SSRC: 32 bits
 
+		public:
 			void version(int vers) { version_ = (uchar)vers; }
 			int version() { return version_; }
 
@@ -51,7 +52,7 @@ namespace net {
 		};
 
 
-		struct rtp_packet {
+		class rtp_packet {
 			rtp_header header_;
 
 			std::vector<uint32_t> csrc_list_;
@@ -71,17 +72,25 @@ namespace net {
 
 			std::vector<char> & payload() { return payload_; }
 
+			asio::ip::udp::endpoint & remote() { return remote_;  }
+
+
+
 			void set_remote(asio::ip::udp::endpoint && rem) {
 				remote_ = std::move(rem);
 			}
 
-			asio::ip::udp::endpoint & remote() { return remote_;  }
-
+			void set_remote(const asio::ip::udp::endpoint & rem) {
+				remote_ = rem;
+			}
+			
+			// mb add vector support
 			void set_payload(const char * source, std::size_t bytes) {
 				payload_.resize(bytes);
 				std::memcpy(payload_.data(), source, bytes);
 			}
 
+			// mb add vector support
 			void set_csrc_list(std::uint32_t * source, std::size_t elems) {
 				csrc_list_.resize(elems);
 				std::memcpy(csrc_list_.data(), source, elems * sizeof(std::uint32_t));

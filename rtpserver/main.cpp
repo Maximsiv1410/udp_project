@@ -72,10 +72,13 @@ public:
 std::uint32_t ids[15];
 char payload[1350];
 
+
+int input = 0;
 std::atomic<unsigned int> bytes_in{0};
 void back(rtp_server& caller, realtime::rtp_packet && msg) {
 	realtime::rtp_packet mypack;
 
+	input += msg.total();
 	bytes_in.fetch_add(msg.total(), std::memory_order_relaxed);
 	auto & header = mypack.header();
 
@@ -116,6 +119,7 @@ int main() {
 	server.stop();
 
 	std::cout << "read bytes: " << bytes_in << '\n';
+	std::cout << "readd bytes " << input << '\n';
 	std::cout << "written bytes: " << server.written_out() << '\n';
 	return 0;
 }

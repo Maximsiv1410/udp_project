@@ -35,7 +35,6 @@ namespace net {
 
 		bool notify_mode;
 	
-
 		std::atomic<unsigned long long> bytes_out{0};
 	public:
 
@@ -135,7 +134,6 @@ namespace net {
 					if (bytes) {
 						//std::cout << "read message \n";
 						in_buff.set_size(bytes);
-						bytes_in.fetch_add(bytes, std::memory_order_relaxed);
 						on_read();
 					}
 					else {
