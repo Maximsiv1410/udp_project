@@ -26,10 +26,17 @@ namespace net {
 				std::memcpy(&pack.header(), buffer.data() + offset, sizeof(rtp_header));
 				offset += sizeof(rtp_header);
 
-				std::size_t csrc_len = 4 * pack.header().csrc_count();
-				pack.csrc_list().resize(csrc_len / 4);
-				std::memcpy(pack.csrc_list().data(), buffer.data() + offset, csrc_len);
-				offset += csrc_len;
+				if (pack.header().csrc_count() > 0) {
+					std::size_t csrc_len = 4 * pack.header().csrc_count();
+					pack.csrc_list().resize(pack.header().csrc_count());
+					std::memcpy(pack.csrc_list().data(), buffer.data() + offset, csrc_len);
+					offset += csrc_len;
+				}
+
+				////// video_payload_header section
+				std::memcpy(&pack.vph(), buffer.data() + offset, sizeof(video_payload_header));
+				offset += sizeof(video_payload_header);
+				////// video_payload_header section
 
 				// TODO :
 				std::size_t payload_len = buffer.size() - offset;

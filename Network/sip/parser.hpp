@@ -22,6 +22,7 @@ namespace net {
 			parser(Buffer & buff, asio::ip::udp::endpoint&& rem) : buffer(buff), remote(std::move(rem)) {}
 
 			message_wrapper parse() {
+				// too silly check
 				if (buffer[0] == 'S') // check for 'SIP/2.0'
 				{
 					response_parser<Buffer> parser(buffer, std::move(remote));

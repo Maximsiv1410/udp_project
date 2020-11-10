@@ -33,7 +33,7 @@ namespace net {
 
 				asio::ip::udp::endpoint & remote() & { return remote_; }
 
-				const std::map<std::string, std::string> & headers() { return headers_; }
+				std::map<std::string, std::string> & headers() { return headers_; }
 
 				std::vector<char> & body() { return body_; }
 

@@ -15,8 +15,15 @@ namespace net {
 				std::memcpy(buff.data() + offset, &pack.header(), sizeof(rtp_header));
 				offset += sizeof(rtp_header);
 
-				std::memcpy(buff.data() + offset, pack.csrc_list().data(), pack.header().csrc_count() * 4);
-				offset += pack.header().csrc_count() * 4; // 4-byte width * n elements
+				if (!pack.csrc_list.empty()) {
+					std::memcpy(buff.data() + offset, pack.csrc_list().data(), pack.header().csrc_count() * 4);
+					offset += pack.header().csrc_count() * 4; // 4-byte width * n elements
+				}
+				
+				////// video_payload_header section
+				std::memcpy(buff.data() + offset, &pack.vph(), sizeof(video_payload_header));
+				offset += sizeof(video_payload_header);
+				////// video_payload_header section
 
 				std::memcpy(buff.data() + offset, pack.payload().data(), pack.payload().size());
 				offset += pack.payload().size();
@@ -33,8 +40,15 @@ namespace net {
 				std::memcpy(buff.data() + offset, &pack.header(), sizeof(rtp_header));
 				offset += sizeof(rtp_header);
 
-				std::memcpy(buff.data() + offset, pack.csrc_list().data(), pack.header().csrc_count() * 4);
-				offset += pack.header().csrc_count() * 4; // 4-byte width * n elements
+				if (!pack.csrc_list.empty()) {
+					std::memcpy(buff.data() + offset, pack.csrc_list().data(), pack.header().csrc_count() * 4);
+					offset += pack.header().csrc_count() * 4; // 4-byte width * n elements
+				}
+
+				////// video_payload_header section
+				std::memcpy(buff.data() + offset, &pack.vph(), sizeof(video_payload_header));
+				offset += sizeof(video_payload_header);
+				////// video_payload_header section
 
 				std::memcpy(buff.data() + offset, pack.payload().data(), pack.payload().size());
 				offset += pack.payload().size();

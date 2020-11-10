@@ -153,7 +153,6 @@ namespace net {
 
 		void on_read() {
 			input_parser parser(in_buff, std::move(remote_));
-			qin.push(parser.parse());
 
 			//should callback be called sequentially or simultaneously?????
 			// strand reduces speed of processing callbacks
@@ -162,44 +161,29 @@ namespace net {
 			// because this service allows multiple 'send' operations at a time
 
 			if (notify_mode && strandie) {
+				// probably too memory-expensive :(
+				auto message = std::make_shared<input_type>(parser.parse());
+
 				// callback will be called only after previous call end
 				strandie->post(
-				[this]
-				{
-					input_type message;
-					bool attempt = qin.try_pop(message);
-					if (attempt) {
-						std::function<void(input_type&&)> task;
-						{
-							std::lock_guard<std::mutex> guard(callback_mtx);
-							task = cback;
-						}
-						if (task) {
-							task(std::move(message));
-						}
+				[this, message]
+				{				
+					// try_pop with no shared_ptr
+					std::function<void(input_type&&)> task;
+					{
+						std::lock_guard<std::mutex> guard(callback_mtx);
+						task = cback;
 					}
+					if (task) {
+						task(std::move(*message));
+					}
+					
 				});
 
-				/*
-				asio::post(ios_,
-				[this] 
-				{
-					input_type message;
-					bool attempt = qin.try_pop(message);
-					if (attempt) {
-						std::function<void(input_type&&)> task;
-						{
-							std::lock_guard<std::mutex> guard(callback_mtx);
-							task = cback;
-						}
-						if (task) {
-							task(std::move(message));
-						}
-					}
-				});
-				*/
 			}
 
+
+			qin.push(parser.parse());
 			in_buff.zero();
 			read();
 		}

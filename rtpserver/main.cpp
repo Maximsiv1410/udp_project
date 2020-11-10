@@ -77,6 +77,7 @@ int input = 0;
 std::atomic<unsigned int> bytes_in{0};
 void back(rtp_server& caller, realtime::rtp_packet && msg) {
 	realtime::rtp_packet mypack;
+	//std::cout << "server received rtp packet from: " << msg.remote().address() << ":" << msg.remote().port() << '\n';  
 
 	input += msg.total();
 	bytes_in.fetch_add(msg.total(), std::memory_order_relaxed);

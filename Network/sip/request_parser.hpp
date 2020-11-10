@@ -25,6 +25,7 @@ namespace net {
 				request req;
 				req.remote() = std::move(endpoint);
 
+				// if bodyptr = nullptr => exception ?
 				auto bodyptr = strstr(buffer.data(), "\r\n\r\n");
 				auto diff = bodyptr - buffer.data();
 
@@ -49,7 +50,7 @@ namespace net {
 					}
 				}
 
-				// shoudl be SDP parsing here, but now skipped this
+				// should be SDP parsing here, but now skipped this
 
 				req.body().resize(buffer.size() - diff - 4);
 				std::memcpy(req.body().data(), bodyptr + 4, req.body().size());

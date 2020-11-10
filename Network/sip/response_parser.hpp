@@ -25,7 +25,8 @@ namespace net {
 			std::unique_ptr<response> parse() {
 				response resp;
 				resp.set_remote(std::move(endpoint));
-
+	
+				// if bodyptr = nullptr => exception ?
 				auto bodyptr = strstr(buffer.data(), "\r\n\r\n");
 				auto diff = bodyptr - buffer.data();
 

@@ -103,11 +103,14 @@ int main(int argc, char ** argv) {
 	setlocale(LC_ALL, "ru");
 	my_num.store(std::stol(argv[1]));
 
+	std::string address{argv[2]};
+
+
 	std::memset(payload, 1, 1350);
 	std::memset(ids, 1, 15 * sizeof(std::uint32_t));
 
 
-	rtp_client client("127.0.0.1", 1, 6000);
+	rtp_client client(address, 2, 6000);
 	client.set_callback([&client](realtime::rtp_packet && package) {
 		back(client, std::move(package));
 	});

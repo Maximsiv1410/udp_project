@@ -51,11 +51,17 @@ namespace net {
 
 		};
 
+		// my personal payload_header only for video data
+		struct video_payload_header {
+    		std::uint32_t full_size;         // full size in bytes
+    		std::uint16_t frag_count;        // number of fragments of full picture
+    		std::uint16_t curr_num;          // number of current fragment
+		};
 
 		class rtp_packet {
 			rtp_header header_;
-
 			std::vector<uint32_t> csrc_list_;
+			video_payload_header vph_;
 			std::vector<char> payload_;
 
 			asio::ip::udp::endpoint remote_;
@@ -65,6 +71,8 @@ namespace net {
 			rtp_packet(rtp_packet&&) = default;
 			rtp_packet & operator= (rtp_packet&&) = default;
 
+			/////////////
+			video_payload_header & vph() { return vph_; }
 
 			rtp_header & header() { return header_; }
 
