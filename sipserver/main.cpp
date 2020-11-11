@@ -11,11 +11,7 @@ using namespace boost;
 #include "server.hpp"
 
 
-
-
-
 std::map<std::string, asio::ip::udp::endpoint> dbase; // to hold info about 'registered' clients
-
 
 
 std::atomic<unsigned long long> counter{0};
@@ -71,7 +67,6 @@ int main() {
 
 	sip_server server(4, 5060);
 
-
 	server.set_callback(
 	[&server](sip::message_wrapper && wrappie)
 	{
@@ -80,8 +75,8 @@ int main() {
 
 	server.start(true);
 
-
 	std::cin.get();
+	
 	server.stop();
 	return 0;
 }

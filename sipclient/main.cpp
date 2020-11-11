@@ -4,14 +4,8 @@
 
 #include "client_session.hpp"
 
-
-
 using namespace boost;
 using namespace net;
-
-
-
-
 
 
 int main(int argc, char ** argv) {

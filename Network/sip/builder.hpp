@@ -29,7 +29,7 @@ namespace net {
 			}
 
 
-			void extract(std::vector<char> & buff) {
+			void extract(char * buff) {
 				if (sippack.storage()->type() == sip_type::Response) {
 						response_builder resbuilder((sip::response&)(*sippack.storage()));
 						resbuilder.extract(buff);

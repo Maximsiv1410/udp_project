@@ -53,49 +53,46 @@ namespace net {
 
 				std::memcpy(output.data() + offset, sipres.body().data(), sipres.body().size());
 				offset += sipres.body().size();
-
-				output.set_size(offset);
 			}
 
-			// for std vector
-			void extract(std::vector<char> & buffer) {
+			// buffer should be at least 1440 bytes
+			void extract(char * buffer) {
 				std::size_t length = sipres.total();
-				buffer.resize(length);
 				
 				std::size_t offset = 0;
-				std::memcpy(buffer.data() + offset, sipres.version().data(), sipres.version().size());
+				std::memcpy(buffer + offset, sipres.version().data(), sipres.version().size());
 				offset += sipres.version().size();
 				buffer[offset] = ' ';
 				offset += 1;
 
 				std::string code = std::to_string(sipres.code());
-				std::memcpy(buffer.data() + offset, code.data(), code.size());
+				std::memcpy(buffer + offset, code.data(), code.size());
 				offset += code.size();
 				buffer[offset] = ' ';
 				offset += 1;
 
-				std::memcpy(buffer.data() + offset, sipres.status().data(), sipres.status().size());
+				std::memcpy(buffer + offset, sipres.status().data(), sipres.status().size());
 				offset += sipres.status().size();
-				std::memcpy(buffer.data() + offset, CRLF, 2);
+				std::memcpy(buffer + offset, CRLF, 2);
 				offset += 2;
 
 				for (auto & header : sipres.headers()) {
-					std::memcpy(buffer.data() + offset, header.first.data(), header.first.size());
+					std::memcpy(buffer + offset, header.first.data(), header.first.size());
 					offset += header.first.size();
 
-					std::memcpy(buffer.data() + offset, ": ", 2);
+					std::memcpy(buffer + offset, ": ", 2);
 					offset += 2;
 
-					std::memcpy(buffer.data() + offset, header.second.data(), header.second.size());
+					std::memcpy(buffer + offset, header.second.data(), header.second.size());
 					offset += header.second.size();
 
-					std::memcpy(buffer.data() + offset, CRLF, 2);
+					std::memcpy(buffer + offset, CRLF, 2);
 					offset += 2;
 				}
-				std::memcpy(buffer.data() + offset, CRLF, 2);
+				std::memcpy(buffer + offset, CRLF, 2);
 				offset += 2;
 
-				std::memcpy(buffer.data() + offset, sipres.body().data(), sipres.body().size());
+				std::memcpy(buffer + offset, sipres.body().data(), sipres.body().size());
 				offset += sipres.body().size();
 			}
 		};

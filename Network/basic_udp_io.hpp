@@ -31,25 +31,24 @@ namespace net {
 		ip::udp::socket& sock_;
 		ip::udp::endpoint remote_;
 
-		std::unique_ptr<io_context::strand> strandie;
+		std::unique_ptr<io_context::strand> strandie {nullptr};
 
-		bool notify_mode;
+		bool notify_mode {false};
 	
 		std::atomic<unsigned long long> bytes_out{0};
 	public:
-
-		unsigned long long written_out() {
-			return bytes_out.load(std::memory_order_relaxed);
-		}
-
-
 		basic_udp_service(io_context& ios, ip::udp::socket& sock)
 			: 
 			ios_(ios),
 			sock_(sock) 
-			{}
+		{
+		}
 
 		virtual ~basic_udp_service() {}
+
+		unsigned long long written_out() {
+			return bytes_out.load(std::memory_order_relaxed);
+		}
 
 		// rename to 'init_read' ?
 		void start(bool notify = false) {
@@ -78,15 +77,15 @@ namespace net {
 
 		// send message bypassing queue
 		void async_send(output_type & message) {
+			auto out = std::make_shared<std::vector<char>>();
+			out->resize(message.total());
 
-			char * buff = new char[message.total()];
 			output_builder builder(message);
-			builder.extract(buff);
+			builder.extract(out->data());
 
-			sock_.async_send_to(asio::buffer(buff, message.total()), message.remote(),
-			[this, buff](std::error_code ec, std::size_t bytes)
+			sock_.async_send_to(asio::buffer(out->data(), out->size()), message.remote(),
+			[this, out](std::error_code ec, std::size_t bytes)
 			{
-				delete[] buff;
 				if (!ec) {
 					if (bytes) {
 						bytes_out.fetch_add(bytes, std::memory_order_relaxed);
@@ -94,7 +93,7 @@ namespace net {
 					else {
 						std::cout << "bad write - no bytes\n";
 					}
-					try_write(); // should it?
+					try_write();
 				}
 				else {
 					std::cout << ec.message() + "\n";
@@ -162,7 +161,6 @@ namespace net {
 					}
 				}
 				else {
-					std::cout << "write error\n";
 					std::cout << ec.message() << " " << ec.category().name() << " " << ec.value() << "\n";
 				}
 			});
@@ -184,10 +182,9 @@ namespace net {
 				// probably too memory-expensive :(
 				auto message = std::make_shared<input_type>(parser.parse());
 
-				// callback will be called only after previous call end
+				// callback will be called only after completion of previous
 				strandie->post( [this, message]
 				{				
-					// try_pop with no shared_ptr
 					std::function<void(input_type&&)> task;
 					{
 						std::lock_guard<std::mutex> guard(callback_mtx);

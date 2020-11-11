@@ -4,7 +4,7 @@
 namespace net {
 
 
-#define MAX_SIZE 65535
+#define MAX_SIZE 1440 // is it satisfying to be less than MTU - (ip + ethernet + udp) ?
 
 	class buffer {
 		std::array<char, MAX_SIZE> buffer_;
