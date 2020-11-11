@@ -70,59 +70,81 @@ namespace net {
 
 			input_type message;
 			while (!ios_.stopped()) {
-				qin.wait_and_pop(message);
-			
+				qin.wait_and_pop(message);		
 				task(std::move(message));
 			}
 		} 
 
-		void async_send(output_type & res) {
-			qout.push(std::move(res));
-			asio::post(ios_, [this]{write();});
-		}
 
-	private:
+		// send message bypassing queue
+		void async_send(output_type & message) {
 
-		void write() {
-			output_type message;			
-
-			bool attempt = qout.try_pop(message);
-			if (!attempt) {		
-				return;
-			}		
-
-			// std::vector<char> should come here as output_buffer
-			std::shared_ptr<std::vector<char>> out(std::make_shared<std::vector<char>>());
-			out->resize(message.total());
+			char * buff = new char[message.total()];
 			output_builder builder(message);
-			builder.extract(*out);
+			builder.extract(buff);
 
-			sock_.async_send_to(asio::buffer(out->data(), out->size()), message.remote(),
-			[this, out](std::error_code ec, std::size_t bytes)
+			sock_.async_send_to(asio::buffer(buff, message.total()), message.remote(),
+			[this, buff](std::error_code ec, std::size_t bytes)
 			{
+				delete[] buff;
 				if (!ec) {
 					if (bytes) {
-						//std::cout << "written message\n";
 						bytes_out.fetch_add(bytes, std::memory_order_relaxed);
-						on_write();
 					}
 					else {
-						std::cout << "bad write - bytes\n";
-						write();
+						std::cout << "bad write - no bytes\n";
 					}
+					try_write(); // should it?
 				}
 				else {
-					std::cout << "write error\n";
 					std::cout << ec.message() + "\n";
 				}
 			});
 		}
 
 
-		void on_write() {			
-			if (!qout.empty()) {
-				write();
-			}	
+		void enqueue(output_type & res) {
+			qout.push(std::move(res));
+		}
+
+		void init_send() {
+			asio::post(ios_, [this]{ try_write();});
+		}
+
+	private:
+
+		//try_write
+		void try_write() {		
+			if (qout.empty()) return;
+
+			output_type message;
+			bool attempt = qout.try_pop(message);
+			if (!attempt) {		
+				return;
+			}		
+
+			auto out = std::make_shared<std::vector<char>>();
+			out->resize(message.total());
+
+			output_builder builder(message);
+			builder.extract(out->data());
+
+			sock_.async_send_to(asio::buffer(out->data(), out->size()), message.remote(),
+			[this, out](std::error_code ec, std::size_t bytes)
+			{
+				if (!ec) {
+					if (bytes) {
+						bytes_out.fetch_add(bytes, std::memory_order_relaxed);
+					}
+					else {
+						std::cout << "bad write - no bytes\n";
+					}
+					try_write();
+				}
+				else {
+					std::cout << ec.message() + "\n";
+				}
+			});
 		}
 
 
@@ -132,7 +154,6 @@ namespace net {
 			{
 				if (!ec) {
 					if (bytes) {
-						//std::cout << "read message \n";
 						in_buff.set_size(bytes);
 						on_read();
 					}
@@ -150,7 +171,6 @@ namespace net {
 
 		// to think:
 		// notify from service or poll?
-
 		void on_read() {
 			input_parser parser(in_buff, std::move(remote_));
 
@@ -160,13 +180,31 @@ namespace net {
 			// this tactics are beneficial
 			// because this service allows multiple 'send' operations at a time
 
-			if (notify_mode && strandie) {
+			/*if (notify_mode && strandie) {
 				// probably too memory-expensive :(
 				auto message = std::make_shared<input_type>(parser.parse());
 
 				// callback will be called only after previous call end
-				strandie->post(
-				[this, message]
+				strandie->post( [this, message]
+				{				
+					// try_pop with no shared_ptr
+					std::function<void(input_type&&)> task;
+					{
+						std::lock_guard<std::mutex> guard(callback_mtx);
+						task = cback;
+					}
+					if (task) {
+						task(std::move(*message));
+					}
+					
+				});
+
+			} */
+			if (notify_mode) {
+				// probably too memory-expensive :(
+				auto message = std::make_shared<input_type>(parser.parse());
+				// callback will be called only after previous call end
+				asio::post(ios_, [this, message]
 				{				
 					// try_pop with no shared_ptr
 					std::function<void(input_type&&)> task;
@@ -181,10 +219,10 @@ namespace net {
 				});
 
 			}
-
-
-			qin.push(parser.parse());
-			in_buff.zero();
+			else {	
+				qin.push(parser.parse());
+				in_buff.zero();
+			}
 			read();
 		}
 

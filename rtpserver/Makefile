@@ -1,11 +1,14 @@
 default:
 	g++ main.cpp -o server.out -lboost_system -lpthread
 
-san:
+santhread:
 	g++ main.cpp -o serversan.out -lboost_system -lpthread -fsanitize=thread
 
+sanaddr:
+	g++ main.cpp -o serversan.out -lboost_system -lpthread -fsanitize=address
+
 opt:
-	g++ main.cpp -o server.out -lboost_system -lpthread -O2
+	g++ main.cpp -o server.out -std=c++14 -lboost_system -lpthread -O2  
 
 debug:
 	g++ main.cpp -o server.out -lboost_system -lpthread -g3

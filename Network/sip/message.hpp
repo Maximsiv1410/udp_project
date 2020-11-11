@@ -28,8 +28,8 @@ namespace net {
 				message & operator=(message&&) = default;
 				virtual ~message() {}
 
-				message & set_remote(const asio::ip::udp::endpoint& remote) { remote_ = remote; return *this; }
-				message & set_remote(asio::ip::udp::endpoint&& remote) { remote_ = std::move(remote); return *this; }
+				void set_remote(const asio::ip::udp::endpoint& remote) { remote_ = remote; }
+				void set_remote(asio::ip::udp::endpoint&& remote) { remote_ = std::move(remote); }
 
 				asio::ip::udp::endpoint & remote() & { return remote_; }
 
@@ -37,38 +37,29 @@ namespace net {
 
 				std::vector<char> & body() { return body_; }
 
-				message & set_body(const std::string & input) {
+				void set_body(const std::string & input) {
 					body_.resize(input.size());
 					std::memcpy(body_.data(), input.data(), input.size());
 
-					return *this;
 				}
 
-				message & set_body(const char* input, std::size_t size) {
+				void set_body(const char* input, std::size_t size) {
 					body_.resize(size);
 					std::memcpy(body_.data(), input, size);
-
-					return *this;
 				}
 
-				message &  append_body(std::string & input) {
+				void append_body(std::string & input) {
 					auto was = body_.size();
 					body_.resize(was + input.size());
 					std::memcpy(body_.data() + was, input.data(), input.size());
-
-					return *this;
 				}
 
-				message & add_header(std::string & left, std::string & right) {
-					headers_[left] = right;
-
-					return *this;
+				void add_header(std::string & left, std::string & right) {
+					headers_[left] = right;				
 				}
 
-				message & add_header(const char* left, const char* right) {
-					headers_[left] = right;
-
-					return *this;
+				void add_header(const char* left, const char* right) {
+					headers_[left] = right;				
 				}
 
 				std::size_t total() { 

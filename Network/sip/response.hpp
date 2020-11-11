@@ -19,15 +19,15 @@ namespace net {
 			response & operator=(response&& other) = default;
 			response(response&& other) = default;
 
-			response & set_version(const std::string & version) { version_ = version; return *this; }
-			response & set_version(std::string && version) { version_ = std::move(version); return *this; }
-			response & set_version(const char * version) { version_.assign(version); return *this; }
+			void set_version(const std::string & version) { version_ = version; }
+			void set_version(std::string && version) { version_ = std::move(version); }
+			void set_version(const char * version) { version_.assign(version); }
 
-			response & set_code(std::size_t code) { code_ = code; return *this; }
+			void set_code(std::size_t code) { code_ = code; }
 
-			response & set_status(const std::string & status) { status_ = status; return *this; }
-			response & set_status(std::string && status) { status_ = std::move(status); return *this; }
-			response & set_status(const char* status) { status_.assign(status); return *this; }
+			void set_status(const std::string & status) { status_ = status; }
+			void set_status(std::string && status) { status_ = std::move(status); }
+			void set_status(const char* status) { status_.assign(status); }
 
 			std::string & version() { return version_; }
 

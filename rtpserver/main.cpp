@@ -73,16 +73,16 @@ std::uint32_t ids[15];
 char payload[1350];
 
 
-int input = 0;
-std::atomic<unsigned int> bytes_in{0};
+std::atomic<unsigned long long> bytes_in{0};
 void back(rtp_server& caller, realtime::rtp_packet && msg) {
 	realtime::rtp_packet mypack;
 	//std::cout << "server received rtp packet from: " << msg.remote().address() << ":" << msg.remote().port() << '\n';  
 
-	input += msg.total();
 	bytes_in.fetch_add(msg.total(), std::memory_order_relaxed);
 	auto & header = mypack.header();
 
+
+	// now just sending pseudo-data, no sense
 	header.version(1);
 	header.padding(true);
 	header.extension(true);
@@ -98,6 +98,7 @@ void back(rtp_server& caller, realtime::rtp_packet && msg) {
 	mypack.set_remote(std::move(msg.remote()));
 
 	caller.async_send(mypack);
+
 }
 
 
@@ -120,7 +121,6 @@ int main() {
 	server.stop();
 
 	std::cout << "read bytes: " << bytes_in << '\n';
-	std::cout << "readd bytes " << input << '\n';
 	std::cout << "written bytes: " << server.written_out() << '\n';
 	return 0;
 }

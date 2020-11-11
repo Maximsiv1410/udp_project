@@ -19,17 +19,17 @@ namespace net {
 			request & operator=(request&& other) = default;
 			request(request&& other) = default;
 
-			request & set_method(const std::string & meth) { method_ = meth; return *this; }
-			request & set_method(std::string && meth) { method_ = meth; return *this; }
-			request & set_method(const char * meth) { method_ = meth; return *this; }
+			void set_method(const std::string & meth) { method_ = meth; }
+			void set_method(std::string && meth) { method_ = meth; }
+			void set_method(const char * meth) { method_ = meth; }
 
-			request & set_uri(const std::string & uri) { uri_ = uri; return *this; }
-			request & set_uri(std::string && uri) { uri_ = std::move(uri); return *this; }
-			request & set_uri(const char * uri) { uri_.assign(uri); return *this; }
+			void set_uri(const std::string & uri) { uri_ = uri; }
+			void set_uri(std::string && uri) { uri_ = std::move(uri); }
+			void set_uri(const char * uri) { uri_.assign(uri); }
 
-			request & set_version(const std::string & version) { version_ = version; return *this; }
-			request & set_version(std::string && version) { version_ = std::move(version); return *this; }
-			request & set_version(const char* version) { version_.assign(version); return *this; }
+			void set_version(const std::string & version) { version_ = version; }
+			void set_version(std::string && version) { version_ = std::move(version); }
+			void set_version(const char* version) { version_.assign(version); }
 
 			std::string & method() { return method_; }
 

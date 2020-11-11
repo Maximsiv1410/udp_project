@@ -116,7 +116,6 @@ int main(int argc, char ** argv) {
 	});
 	client.start(true);
 
-
 	realtime::rtp_packet pack;
 	auto & header = pack.header();
 

@@ -11,24 +11,10 @@ using namespace boost;
 #include "server.hpp"
 
 
-struct video_session {
-    std::vector<std::string> clients;
 
-    void create(std::vector<std::string> & participants) {
-    	clients = std::move(participants);
-    }
-
-    bool is_participant(std::string name) {
-        for (auto & user : clients) {
-            if (name == user) return true;
-        }
-        return false;
-    }
-};
 
 
 std::map<std::string, asio::ip::udp::endpoint> dbase; // to hold info about 'registered' clients
-std::vector<video_session> sessions; // currently alive sessions
 
 
 
@@ -39,13 +25,13 @@ void back(sip_server& caller, sip::message && msg) {
 
 		if (req.method() == "REGISTER") {
 
+			// sad and bad, but it's temporarily
 			sip::response resp;
-			resp.set_version("SIP/2.0")
-			.set_code(200)
-			.set_status("OK")
-			.set_remote(req.remote());
+			resp.set_version("SIP/2.0");
+			resp.set_code(200);
+			resp.set_status("OK");
+			resp.set_remote(req.remote());;
 
-			std::cout << req.remote() << "\n";
 			dbase[req.headers()["To"]] = req.remote();
 			std::cout << "registered " << dbase[req.headers()["To"]] << '\n';
 
@@ -53,7 +39,7 @@ void back(sip_server& caller, sip::message && msg) {
 			caller.async_send(wrapper);
 		}
 		else if(req.method() == "INVITE") {
-			// readdress request to called user
+			// redirect request to called user
 			if (dbase.find(req.headers()["To"]) != dbase.end()) {
 				req.set_remote(dbase[req.headers()["To"]]);
 				std::cout << "Readdressing INVITE\n";
@@ -69,7 +55,13 @@ void back(sip_server& caller, sip::message && msg) {
 	} 
 	else if (msg.type() == sip::sip_type::Response) {
 		sip::response && resp = (sip::response &&)std::move(msg);
-		// process
+		
+		if (dbase.count(resp.headers()["To"])) {
+			resp.set_remote(dbase[resp.headers()["To"]]);
+			std::cout << "response to " << resp.headers()["To"] << '\n';
+			sip::message_wrapper wrapper(std::make_unique<sip::response>(std::move(resp)));
+			caller.async_send(wrapper);
+		}
 	}
 }
 
