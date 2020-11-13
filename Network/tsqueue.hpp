@@ -41,7 +41,6 @@ namespace net {
 			item = std::move(coll.front());
 			coll.pop();
 			return true;
-
 		}
 
 		std::shared_ptr<T> try_pop() {

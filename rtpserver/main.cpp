@@ -108,7 +108,7 @@ int main() {
 
 	setlocale(LC_ALL, "ru");
 
-	rtp_server server(2, 6000);
+	rtp_server server(4, 6000);
 	server.set_callback(
 	[&server](realtime::rtp_packet && package)
 	{

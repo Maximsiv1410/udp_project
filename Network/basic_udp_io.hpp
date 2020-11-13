@@ -8,7 +8,7 @@ namespace net {
 	using namespace boost;
 	using namespace asio;
 
-	// Buffer should be a stack allocated buffer at least 63535 byte-length
+	// Buffer should be a stack allocated buffer at least 1400 byte-length
 	template <typename Proto, typename Traits, typename Buffer>
 	class basic_udp_service {
 		//// gathering traits of service ////
@@ -50,7 +50,7 @@ namespace net {
 			return bytes_out.load(std::memory_order_relaxed);
 		}
 
-		// rename to 'init_read' ?
+
 		void start(bool notify = false) {
 			notify_mode = notify;
 			if (notify) { 
@@ -93,7 +93,6 @@ namespace net {
 					else {
 						std::cout << "bad write - no bytes\n";
 					}
-					try_write();
 				}
 				else {
 					std::cout << ec.message() + "\n";
@@ -191,6 +190,10 @@ namespace net {
 						task = cback;
 					}
 					if (task) {
+						// should it be moved or just passed by reference?
+						// even if unique_ptr comes here
+						// it can be passed to callback by reference
+						// because we process callbacks from this thread
 						task(std::move(*message));
 					}
 					
