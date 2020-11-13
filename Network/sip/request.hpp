@@ -39,8 +39,8 @@ namespace net {
 
 			sip_type type() override { return sip_type::Request; }
 			
-			std::size_t total() {
-				std::size_t length = message::total();
+			std::size_t total() override {
+				std::size_t length = total_headers_body();
 				length += method_.size();
 				length += 1; // SPACE
 

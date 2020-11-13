@@ -6,6 +6,5 @@ int main() {
 	server.start();
 
 	std::cin.get();
-	
 	return 0;
 }

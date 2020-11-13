@@ -33,12 +33,6 @@ namespace net {
 					offset += csrc_len;
 				}
 
-				////// video_payload_header section
-				std::memcpy(&pack.vph(), buffer.data() + offset, sizeof(video_payload_header));
-				offset += sizeof(video_payload_header);
-				////// video_payload_header section
-
-				// TODO :
 				std::size_t payload_len = buffer.size() - offset;
 				pack.payload().resize(payload_len);
 				std::memcpy(pack.payload().data(), buffer.data() + offset, payload_len);

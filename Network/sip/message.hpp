@@ -59,10 +59,10 @@ namespace net {
 				}
 
 				void add_header(const char* left, const char* right) {
-					headers_[left] = right;				
+					headers_[std::string(left)] = std::string(right);
 				}
 
-				std::size_t total() { 
+				std::size_t total_headers_body() {
 					std::size_t length = 0;
 					for (auto & header : headers_) {
 						length += header.first.size();
@@ -77,6 +77,8 @@ namespace net {
 
 					return length;
 				}
+
+				virtual std::size_t total() = 0;			
 
 
 			virtual sip_type type() = 0;

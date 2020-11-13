@@ -26,7 +26,21 @@ class media_server {
 	realtime::server rtp_service;
 
 	std::vector<std::thread> pool;
-	std::vector<session> sessions;
+
+
+	//std::vector<session> sessions;
+	// some session logic-related stuff here
+	// e.g session_service
+	// which will be responsible
+	// for containing alive session
+	// and registered users
+
+	// also we will need some
+	// rtp logic
+	// but for a first time 
+	// it will be enough to just find
+	// session-partner of rtp_packet sender
+	// and redirect it to session-partner
 
 public:
 
@@ -34,6 +48,8 @@ public:
 	: 
 	sip_ep(asio::ip::udp::v4(), sipport),
 	rtp_ep(asio::ip::udp::v4(), rtpport),
+	sip_socket(ios, sip_ep),
+	rtp_socket(ios, rtp_ep),
 	sipper(ios, sip_socket),
 	rtp_service(ios, rtp_socket),
 	work(std::make_unique<work_entity>(ios))
@@ -59,11 +75,11 @@ public:
 	}
 
 	void sip_callback(sip::message & message) {
-		// process
+		std::cout << "received some SIP-related stuff\n";
 	}
 
 	void rtp_callback(realtime::rtp_packet & packet) {
-		// process
+		std::cout << "received some RTP-related stuff\n";
 	}
 
 
@@ -101,4 +117,4 @@ public:
 		}
 	}
 
-}
+};
