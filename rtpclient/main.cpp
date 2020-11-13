@@ -110,7 +110,7 @@ int main(int argc, char ** argv) {
 	std::memset(ids, 1, 15 * sizeof(std::uint32_t));
 
 
-	rtp_client client(address, 1, 6000);
+	rtp_client client(address, 1, 45566);
 	client.set_callback([&client](realtime::rtp_packet && package) {
 		back(client, std::move(package));
 	});
@@ -136,7 +136,9 @@ int main(int argc, char ** argv) {
 	std::cout << copy.address() << ':' << copy.port() << '\n';
 	pack.set_remote(std::move(copy));
 
+	std::cout << "sending packet with size: " << pack.total() << '\n';
 	client.async_send(pack);
+
 
 	std::cin.get();
 

@@ -4,7 +4,7 @@ using namespace boost;
 
 #include "../Network/sip/sip.hpp"
 #include "../Network/rtp/rtp.hpp"
-#include "session.hpp"
+#include "session_management/session_handler.hpp"
 
 using namespace net;
 
@@ -75,11 +75,11 @@ public:
 	}
 
 	void sip_callback(sip::message & message) {
-		std::cout << "received some SIP-related stuff\n";
+		std::cout << "received some SIP-related stuff with size: " << message.total() << '\n';
 	}
 
 	void rtp_callback(realtime::rtp_packet & packet) {
-		std::cout << "received some RTP-related stuff\n";
+		std::cout << "received some RTP-related stuff with size: " << packet.total() << '\n';
 	}
 
 

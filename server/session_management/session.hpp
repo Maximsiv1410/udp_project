@@ -1,5 +1,5 @@
 #include <boost/asio.hpp>
-#include "../Network/rtp/rtp.hpp"
+#include "../../Network/rtp/rtp.hpp"
 #include <iostream>
 
 using namespace boost;
@@ -10,13 +10,15 @@ struct peer {
 	asio::ip::udp::endpoint remote;
 };
 
-struct session {
+class session {
 	peer caller;
 	peer callee;
 
+	// may be std::atomic_flag ??
 	std::atomic<bool> is_alive;
 	std::atomic<bool> is_finished;
 
+public:
 	bool is_participant(const asio::ip::udp::endpoint & ep) {
 		if (ep == caller.remote || ep == callee.remote) {
 			return true;
@@ -30,5 +32,8 @@ struct session {
 		if (callee.remote != ep) return callee.remote;
 	}
 
+	bool alive() {
+		return is_alive.load(std::memory_order_relaxed);
+	}
 
 };

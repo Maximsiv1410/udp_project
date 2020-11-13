@@ -61,6 +61,7 @@ public:
 			request.add_header("Content-Length", "0");
 
 			sip::message_wrapper wrapper {std::make_unique<sip::request>(std::move(request))};
+			std::cout << "sending message with size: " << wrapper.storage()->total() << "\n";
 			sip_connection.async_send(wrapper);
 		}
 	}
