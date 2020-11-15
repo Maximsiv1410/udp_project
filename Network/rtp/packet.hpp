@@ -54,6 +54,7 @@ namespace net {
 
 		struct video_header {
 		    std::uint32_t full_size;    // byte-amount of full picture size 
+		    std::uint32_t frame_no;		// frame counter
 		    std::uint16_t parts;        // amount of parts after partition 
 		    std::uint16_t part_no;      // number of current part
 		    std::uint16_t part_size;    // size of current part

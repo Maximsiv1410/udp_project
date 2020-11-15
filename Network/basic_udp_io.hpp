@@ -36,6 +36,7 @@ namespace net {
 		bool notify_mode {false};
 	
 		std::atomic<unsigned long long> bytes_out{0};
+
 	public:
 		basic_udp_service(io_context& ios, ip::udp::socket& sock)
 			: 
@@ -59,6 +60,10 @@ namespace net {
 			read();
 		}
 
+		void shutdown() {
+			sock_.close();
+		}
+
 		void set_callback(std::function<void(input_type&&)> callback) {
 			std::lock_guard<std::mutex> guard(callback_mtx);
 			cback = std::move(callback);
@@ -67,23 +72,23 @@ namespace net {
 		void poll(std::function<void(input_type&&)> task) {
 			if (notify_mode) return;
 
-			input_type message;
+			input_type input;
 			while (!ios_.stopped()) {
-				qin.wait_and_pop(message);		
-				task(std::move(message));
+				qin.wait_and_pop(input);		
+				task(std::move(input));
 			}
 		} 
 
 
 		// send message bypassing queue
-		void async_send(output_type & message) {
+		void async_send(output_type & output /* std::function<void()> completion_handler */) {
 			auto out = std::make_shared<std::vector<char>>();
-			out->resize(message.total());
+			out->resize(output.total());
 
-			output_builder builder(message);
+			output_builder builder(output);
 			builder.extract(out->data());
 
-			sock_.async_send_to(asio::buffer(out->data(), out->size()), message.remote(),
+			sock_.async_send_to(asio::buffer(out->data(), out->size()), output.remote(),
 			[this, out](std::error_code ec, std::size_t bytes)
 			{
 				if (!ec) {
@@ -101,18 +106,18 @@ namespace net {
 		}
 
 
-		void enqueue(output_type & res) {
-			qout.push(std::move(res));
+		void enqueue(output_type & output) {
+			qout.push(std::move(output));
 		}
 
 		void init_send() {
 			asio::post(ios_, [this]{ try_write();});
 		}
 
-	private:
 
-		//try_write
-		void try_write() {		
+
+	private:
+		void try_write() {	
 			if (qout.empty()) return;
 
 			output_type message;
@@ -179,10 +184,10 @@ namespace net {
 
 			if (notify_mode && strandie) {
 				// probably too memory-expensive :(
-				auto message = std::make_shared<input_type>(parser.parse());
+				auto input = std::make_shared<input_type>(parser.parse());
 
 				// callback will be called only after completion of previous
-				strandie->post( [this, message]
+				strandie->post( [this, input]
 				{				
 					std::function<void(input_type&&)> task;
 					{
@@ -194,7 +199,7 @@ namespace net {
 						// even if unique_ptr comes here
 						// it can be passed to callback by reference
 						// because we process callbacks from this thread
-						task(std::move(*message));
+						task(std::move(*input));
 					}
 					
 				});

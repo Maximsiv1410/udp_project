@@ -76,6 +76,11 @@ public:
 
 	void sip_callback(sip::message & message) {
 		std::cout << "received some SIP-related stuff with size: " << message.total() << '\n';
+		if (message.type() == sip::sip_type::Request) {
+			std::cout << ((sip::request&)message).method() << '\n';
+			std::cout << ((sip::request&)message).headers()["From"] << '\n';
+			std::cout << ((sip::request&)message).headers()["To"] << '\n';
+		}
 	}
 
 	void rtp_callback(realtime::rtp_packet & packet) {

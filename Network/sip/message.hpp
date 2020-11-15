@@ -54,12 +54,16 @@ namespace net {
 					std::memcpy(body_.data() + was, input.data(), input.size());
 				}
 
-				void add_header(std::string & left, std::string & right) {
+				void add_header(const std::string & left, const std::string & right) {
 					headers_[left] = right;				
 				}
 
+				void add_header(std::string && left, std::string && right) {
+					headers_[std::move(left)] = std::move(right);				
+				}
+
 				void add_header(const char* left, const char* right) {
-					headers_[std::string(left)] = std::string(right);
+					headers_[left] = right;
 				}
 
 				std::size_t total_headers_body() {
