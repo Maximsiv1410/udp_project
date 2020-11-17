@@ -5,6 +5,12 @@
 using namespace boost;
 using namespace net;
 
+enum class session_status {
+	pending,
+	happening,
+	finished
+};
+
 struct peer {
 	std::string name;
 	asio::ip::udp::endpoint remote;
@@ -14,9 +20,7 @@ class session {
 	peer caller;
 	peer callee;
 
-	// may be std::atomic_flag ??
-	std::atomic<bool> is_alive;
-	std::atomic<bool> is_finished;
+	std::atomic<session_status> is_alive;
 
 public:
 	bool is_participant(const asio::ip::udp::endpoint & ep) {

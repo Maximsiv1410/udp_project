@@ -2,7 +2,6 @@
 #include <boost/asio.hpp>
 #include <iostream>
 
-
 #include "../../Network/sip/sip.hpp"
 #include "session.hpp"
 
@@ -10,16 +9,17 @@ using namespace boost;
 using namespace net;
 
 class session_handler {
-	std::vector<session> sessions;
+	std::vector<session> sessions; // thread safe ?
+	// std::map<std::string, void(session_handler::*)(sip::request &)>
+	// std::map<std::string, void(session_handler::*)(sip::response &)>
 
 public:
 
+	bool has_session(int endpoint) {
+		//
+	}
+
 	void process(sip::message & msg) {
-		// may be parameter should be POINTER
-		// to use dynamic_cast conversion to sip::request*
-		// etc
-		// we can use dynamic_cast with references
-		// but it is overhead-way
 		if (msg.type() == sip::sip_type::Request) {
 			on_request((sip::request&)msg);
 		}
@@ -38,15 +38,28 @@ public:
 
 	//////////////// handlers ///////////////////
 
-	void on_invite() {
+	void tracked_invite(sip::request & request) {
 
 	}
 
-	void on_ringing() {
+	void tracked_ack(sip::request & request) {
 
 	}
 
-	void on_ok() {
+	void tracked_bye(sip::request & request) {
+
+	}
+
+	//////////////////////////////////////////////////
+	void tracked_trying(sip::response & response) {
+
+	}
+
+	void tracked_ringing(sip::response & response) {
+
+	}
+
+	void on_ok(sip::response & response) {
 		
 	}
 };

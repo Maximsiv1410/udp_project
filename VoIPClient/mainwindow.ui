@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>499</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QPushButton" name="shotButton">
+    <property name="geometry">
+     <rect>
+      <x>340</x>
+      <y>400</y>
+      <width>101</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>screen shot</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="callName">
+    <property name="geometry">
+     <rect>
+      <x>550</x>
+      <y>10</y>
+      <width>241</width>
+      <height>41</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QCameraViewfinder" name="myViewFinder" native="true">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>60</y>
+      <width>379</width>
+      <height>319</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="callButton">
+    <property name="geometry">
+     <rect>
+      <x>280</x>
+      <y>10</y>
+      <width>251</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Call</string>
+    </property>
+   </widget>
+   <widget class="QCameraViewfinder" name="partnerViewFinder" native="true">
+    <property name="geometry">
+     <rect>
+      <x>410</x>
+      <y>60</y>
+      <width>379</width>
+      <height>319</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="stopCall">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>10</y>
+      <width>251</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Hang Up</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>800</width>
+     <height>21</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QCameraViewfinder</class>
+   <extends>QWidget</extends>
+   <header>qcameraviewfinder.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>shotButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>takeScreen()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>400</x>
+     <y>446</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>307</x>
+     <y>392</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>callButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>startCall()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>258</x>
+     <y>46</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>398</x>
+     <y>133</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <slot>takeScreen()</slot>
+  <slot>startCall()</slot>
+ </slots>
+</ui>
