@@ -37,6 +37,8 @@ namespace net {
 	
 		std::atomic<unsigned long long> bytes_out{0};
 
+                std::atomic<unsigned long long> bytes_in{0};
+
 	public:
 		basic_udp_service(io_context& ios, ip::udp::socket& sock)
 			: 
@@ -50,6 +52,10 @@ namespace net {
 		unsigned long long written_out() {
 			return bytes_out.load(std::memory_order_relaxed);
 		}
+
+                unsigned long long read_in() {
+                    return bytes_in.load(std::memory_order_relaxed);
+                }
 
 
 		void start(bool notify = false) {
@@ -94,7 +100,7 @@ namespace net {
 			[this, out](std::error_code ec, std::size_t bytes)
 			{
 				if (!ec) {
-					if (bytes) {
+                                        if (bytes) {
 						bytes_out.fetch_add(bytes, std::memory_order_relaxed);
 						std::cout << "written " << bytes << " bytes.\n";
 					}
@@ -161,10 +167,11 @@ namespace net {
 				if (!ec) {
 					if (bytes) {
 						in_buff.set_size(bytes);
-						std::cout << "read " << bytes << " bytes.\n";
+                                                bytes_in.store(bytes, std::memory_order_relaxed);
+                                                std::cout << "read " << bytes << " bytes.\n";
 						on_read();
 					}
-					else {
+                                        else {
 						read();
 					}
 				}

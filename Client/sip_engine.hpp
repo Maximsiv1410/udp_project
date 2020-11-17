@@ -63,11 +63,12 @@ public:
     sip_engine(asio::io_context & ioc, std::string address, std::uint16_t port)
         : sip::client(ioc, sock),
           ios(ioc),
-          sock(ioc),
-          remote(asio::ip::address::from_string(address), port)
+          remote(asio::ip::address::from_string(address), port),
+          sock(ioc)
+
     {
         sock.open(asio::ip::udp::v4());
-        //sock.connect(remote);
+        sock.connect(remote);
 
         session.through = sock.remote_endpoint();
 
@@ -84,9 +85,10 @@ public:
 
         this->set_callback([this](sip::message_wrapper && wrapper)
         {
-            qDebug() << "message_wrapper got\n";
             this->on_message(*wrapper.storage());
         });
+
+
 
     }
 
@@ -204,12 +206,10 @@ public:
 
 
     void on_message(sip::message & message) {
-        qDebug() << "message got\n";
         if (message.type() == sip::sip_type::Request) {
             sip::request & request = (sip::request&)message;
             if (request_map.count(request.method())) {
                 (this->*request_map[request.method()])(request);
-                //qDebug() << "request got\n";
             }
             else {
                 qDebug() << "No handler for method: " << request.method().c_str() << "\n";
@@ -295,7 +295,7 @@ private:
             // send 100 Trying
 
             qDebug() << "received invite from " << request.headers()["From"].c_str() << "\n";
-            //emit incoming_call(this->session);
+            emit incoming_call(request.headers()["From"]);
             // send 180 Ringing and emit signal to notify MainWindow
 
         }
@@ -336,14 +336,15 @@ public slots:
 
 signals:
     // display incoming call on form
-    void incoming_call(const sip::client_session & session_info);
+    void incoming_call(std::string who);
 
     void finishing_call();
 
 private:
     asio::io_context & ios;
-    asio::ip::udp::socket sock;
+
     asio::ip::udp::endpoint remote;
+    asio::ip::udp::socket sock;
 
     sip::status status;
     sip::role role;

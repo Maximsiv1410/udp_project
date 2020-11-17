@@ -9,6 +9,7 @@
 #include <QCameraInfo>
 #include <QMediaMetaData>
 #include <QBuffer>
+#include <QMessageBox>
 
 #include <fstream>
 
@@ -20,7 +21,9 @@ MainWindow::MainWindow(QWidget *parent)
     auto threads = std::thread::hardware_concurrency();
     if (!threads) threads = 2;
 
-    for (std::size_t i = 0; i < 2; i++) {
+    work.reset(new work_entity(ios));
+
+    for (std::size_t i = 0; i < 4; i++) {
         task_force.push_back(std::thread([this]{ ios.run(); }));
     }
 
@@ -32,7 +35,7 @@ MainWindow::MainWindow(QWidget *parent)
     sipper->start(true);
 
     //connect(rtp_service.get(), &rtp_io::frame_gathered, this, &MainWindow::on_frame_gathered);
-
+    connect(sipper.get(), &sip_engine::incoming_call, this, &MainWindow::incoming_call);
 
     setupCamera(QCameraInfo::defaultCamera());
 }
@@ -69,8 +72,6 @@ MainWindow::~MainWindow()
 void MainWindow::setupCamera(const QCameraInfo & cameraInfo) {
     // fot later needs to list for user all available cameras
     const QList<QCameraInfo> cameras = QCameraInfo::availableCameras();
-
-
     camera.reset(new QCamera(cameraInfo));
 
     imageCapture.reset(new QCameraImageCapture(camera.data()));
@@ -79,7 +80,6 @@ void MainWindow::setupCamera(const QCameraInfo & cameraInfo) {
 
     camera->setViewfinder(ui->myViewFinder);
     camera->start();
-
 }
 
 
@@ -105,8 +105,14 @@ void MainWindow::processCapturedImage(int requestId, const QImage& img) {
 
 //  signals
 
-void MainWindow::on_frame_gathered(std::shared_ptr<std::vector<char>> frame) {
+/*void MainWindow::on_frame_gathered(std::shared_ptr<std::vector<char>> frame) {
     Q_UNUSED(frame)
+} */
+
+void MainWindow::incoming_call(std::string from) {
+    QMessageBox msgbox;
+    msgbox.setText(("You are being called by " + from).c_str());
+    msgbox.exec();
 }
 
 void MainWindow::takeScreen() {

@@ -25,9 +25,11 @@ public:
     void setupCamera(const QCameraInfo & cameraInfo);
 
 private slots:
-    void on_frame_gathered(std::shared_ptr<std::vector<char>> frame);
+    //void on_frame_gathered(std::shared_ptr<std::vector<char>> frame);
 
     void processCapturedImage(int requestId, const QImage& img);
+
+    void incoming_call(std::string from);
 
     void takeScreen();
 
