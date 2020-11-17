@@ -33,6 +33,8 @@ private slots:
 
     void startCall();
 
+    void on_registerBtn_clicked();
+
 private:
     using work_entity = asio::io_context::work;
     using work_ptr = std::unique_ptr<work_entity>;

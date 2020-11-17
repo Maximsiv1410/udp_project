@@ -88,12 +88,15 @@ namespace net {
 			output_builder builder(output);
 			builder.extract(out->data());
 
+			
+			std::cout << "writing to " << output.remote() << '\n';
 			sock_.async_send_to(asio::buffer(out->data(), out->size()), output.remote(),
 			[this, out](std::error_code ec, std::size_t bytes)
 			{
 				if (!ec) {
 					if (bytes) {
 						bytes_out.fetch_add(bytes, std::memory_order_relaxed);
+						std::cout << "written " << bytes << " bytes.\n";
 					}
 					else {
 						std::cout << "bad write - no bytes\n";
@@ -158,6 +161,7 @@ namespace net {
 				if (!ec) {
 					if (bytes) {
 						in_buff.set_size(bytes);
+						std::cout << "read " << bytes << " bytes.\n";
 						on_read();
 					}
 					else {

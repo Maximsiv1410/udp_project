@@ -60,16 +60,15 @@ enum class ok_reason {
 class sip_engine : public  QObject, public sip::client {
     Q_OBJECT
 public:
-    sip_engine(asio::io_context & ioc, std::string address, std::uint16_t port, std::string my_name)
+    sip_engine(asio::io_context & ioc, std::string address, std::uint16_t port)
         : sip::client(ioc, sock),
           ios(ioc),
           sock(ioc),
           remote(asio::ip::address::from_string(address), port)
     {
         sock.open(asio::ip::udp::v4());
-        sock.connect(remote);
+        //sock.connect(remote);
 
-        session.me = std::move(my_name);
         session.through = sock.remote_endpoint();
 
         role = sip::role::empty;
@@ -82,6 +81,13 @@ public:
         response_map["OK"] = &sip_engine::on_ok;
         response_map["Ringing"] = &sip_engine::on_ringing;
         response_map["Trying"] = &sip_engine::on_trying;
+
+        this->set_callback([this](sip::message_wrapper && wrapper)
+        {
+            qDebug() << "message_wrapper got\n";
+            this->on_message(*wrapper.storage());
+        });
+
     }
 
     void set_begin_handler(std::function<void(sip::client_session)> handler) {
@@ -93,17 +99,39 @@ public:
         // call 'handler' when sip-session was finished
     }
 
+    void do_register(std::string me) {
+        if (role == sip::role::empty && status == sip::status::Idle) {
+            session.me = me;
+
+            sip::request request;
+            request.set_method("REGISTER");
+            request.set_uri("sip:server");
+            request.set_version("SIP/2.0");
+            request.add_header("To", me);
+            request.add_header("From", me);
+            request.set_remote(sock.remote_endpoint());
+
+            auto wrapper = sip::message_wrapper{std::make_unique<sip::request>(std::move(request))};
+            this->async_send(wrapper);
+
+            qDebug() << "registered\n";
+        }
+        else {
+
+        }
+    }
+
     void invite(std::string who) {
         if (role == sip::role::empty && status == sip::status::Idle) {
+            qDebug() << sock.local_endpoint().address().to_string().c_str() << " " <<sock.local_endpoint().port() << '\n';
             session.other = who;
             sip::request request;
             request.set_method("INVITE");
             request.set_uri(who);
             request.set_version("SIP/2.0");
             request.add_header("CSeq", std::to_string(cseq) + " INVITE");
-            request.add_header("To", session.other);
+            request.add_header("To", who);
             request.add_header("From", session.me);
-            request.add_header("RTPPORT", "45777"); // BAD, just for test
             request.set_remote(sock.remote_endpoint());
 
             auto wrapper = sip::message_wrapper{std::make_unique<sip::request>(std::move(request))};
@@ -173,13 +201,15 @@ public:
         }
     }
 
-    /* ////////////////////////////////////////////////////// */
-private:
+
+
     void on_message(sip::message & message) {
+        qDebug() << "message got\n";
         if (message.type() == sip::sip_type::Request) {
             sip::request & request = (sip::request&)message;
             if (request_map.count(request.method())) {
                 (this->*request_map[request.method()])(request);
+                //qDebug() << "request got\n";
             }
             else {
                 qDebug() << "No handler for method: " << request.method().c_str() << "\n";
@@ -195,7 +225,8 @@ private:
             }
         }
     }
-
+     /* ////////////////////////////////////////////////////// */
+private:
     void on_trying(sip::response & response) {
         if(response.code() != 100) return;
 
@@ -263,6 +294,7 @@ private:
 
             // send 100 Trying
 
+            qDebug() << "received invite from " << request.headers()["From"].c_str() << "\n";
             //emit incoming_call(this->session);
             // send 180 Ringing and emit signal to notify MainWindow
 

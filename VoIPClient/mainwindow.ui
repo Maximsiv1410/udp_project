@@ -17,8 +17,8 @@
    <widget class="QPushButton" name="shotButton">
     <property name="geometry">
      <rect>
-      <x>340</x>
-      <y>400</y>
+      <x>630</x>
+      <y>390</y>
       <width>101</width>
       <height>41</height>
      </rect>
@@ -81,6 +81,29 @@
     </property>
     <property name="text">
      <string>Hang Up</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="registerBtn">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>400</y>
+      <width>251</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Register</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="registerTxt">
+    <property name="geometry">
+     <rect>
+      <x>290</x>
+      <y>400</y>
+      <width>241</width>
+      <height>41</height>
+     </rect>
     </property>
    </widget>
   </widget>

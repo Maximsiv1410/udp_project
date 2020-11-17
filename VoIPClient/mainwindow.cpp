@@ -20,14 +20,15 @@ MainWindow::MainWindow(QWidget *parent)
     auto threads = std::thread::hardware_concurrency();
     if (!threads) threads = 2;
 
-    for (std::size_t i = 0; i < threads; i++) {
+    for (std::size_t i = 0; i < 2; i++) {
         task_force.push_back(std::thread([this]{ ios.run(); }));
     }
 
     //sipper.set_begin_handler([](){});
     //sipper.set_end_handler([](){});
 
-    sipper = std::make_unique<sip_engine>(ios, "127.0.0.1", 5060, "sip:max");
+    sipper = std::make_unique<sip_engine>(ios, "127.0.0.1", 5060);
+
     sipper->start(true);
 
     //connect(rtp_service.get(), &rtp_io::frame_gathered, this, &MainWindow::on_frame_gathered);
@@ -122,4 +123,11 @@ void MainWindow::startCall() {
     std::string who = ui->callName->text().toStdString();
 
     sipper->invite(ui->callName->text().toStdString());
+}
+
+void MainWindow::on_registerBtn_clicked()
+{
+    if (ui->registerTxt->text().isEmpty()) return;
+
+    sipper->do_register(ui->registerTxt->text().toStdString());
 }

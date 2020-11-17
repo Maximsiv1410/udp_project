@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 4.12.3, 2020-11-16T02:26:42. -->
+<!-- Written by QtCreator 4.12.3, 2020-11-17T20:28:57. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -308,8 +308,9 @@
     </valuelist>
     <value type="int" key="PE.EnvironmentAspect.Base">2</value>
     <valuelist type="QVariantList" key="PE.EnvironmentAspect.Changes"/>
-    <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">Qt4ProjectManager.Qt4RunConfiguration:C:/Users/Maxim/Documents/QtProjects/VoIPClient/VoIPClient.pro</value>
-    <value type="QString" key="ProjectExplorer.RunConfiguration.BuildKey">C:/Users/Maxim/Documents/QtProjects/VoIPClient/VoIPClient.pro</value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">VoIPClient2</value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">Qt4ProjectManager.Qt4RunConfiguration:C:/Users/Maxim/Desktop/voip/VoIPClient/VoIPClient.pro</value>
+    <value type="QString" key="ProjectExplorer.RunConfiguration.BuildKey">C:/Users/Maxim/Desktop/voip/VoIPClient/VoIPClient.pro</value>
     <value type="QString" key="RunConfiguration.Arguments"></value>
     <value type="bool" key="RunConfiguration.Arguments.multi">false</value>
     <value type="QString" key="RunConfiguration.OverrideDebuggerStartup"></value>
