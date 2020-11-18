@@ -37,16 +37,6 @@
      </rect>
     </property>
    </widget>
-   <widget class="QCameraViewfinder" name="myViewFinder" native="true">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>60</y>
-      <width>379</width>
-      <height>319</height>
-     </rect>
-    </property>
-   </widget>
    <widget class="QPushButton" name="callButton">
     <property name="geometry">
      <rect>
@@ -99,7 +89,17 @@
    <widget class="QGraphicsView" name="graphicsView">
     <property name="geometry">
      <rect>
-      <x>400</x>
+      <x>10</x>
+      <y>60</y>
+      <width>391</width>
+      <height>331</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QGraphicsView" name="partnerGraphicsView">
+    <property name="geometry">
+     <rect>
+      <x>410</x>
       <y>60</y>
       <width>391</width>
       <height>331</height>
@@ -119,14 +119,6 @@
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>QCameraViewfinder</class>
-   <extends>QWidget</extends>
-   <header>qcameraviewfinder.h</header>
-   <container>1</container>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections>
   <connection>
@@ -136,8 +128,8 @@
    <slot>takeScreen()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>400</x>
-     <y>446</y>
+     <x>620</x>
+     <y>461</y>
     </hint>
     <hint type="destinationlabel">
      <x>307</x>
@@ -152,8 +144,8 @@
    <slot>startCall()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>258</x>
-     <y>46</y>
+     <x>280</x>
+     <y>67</y>
     </hint>
     <hint type="destinationlabel">
      <x>398</x>

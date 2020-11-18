@@ -67,7 +67,9 @@ namespace net {
 		}
 
 		void shutdown() {
-			sock_.close();
+			if (sock_.is_open()) {
+				sock_.close();
+			}
 		}
 
 		void set_callback(std::function<void(input_type&&)> callback) {
@@ -167,11 +169,11 @@ namespace net {
 				if (!ec) {
 					if (bytes) {
 						in_buff.set_size(bytes);
-                                                bytes_in.store(bytes, std::memory_order_relaxed);
-                                                std::cout << "read " << bytes << " bytes.\n";
+                        bytes_in.store(bytes, std::memory_order_relaxed);
+                        std::cout << "read " << bytes << " bytes.\n";
 						on_read();
 					}
-                                        else {
+                    else {
 						read();
 					}
 				}

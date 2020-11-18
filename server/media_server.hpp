@@ -47,6 +47,9 @@ public:
 					rtpserv.async_send(pack);
 				}
 			}
+			else {
+				std::cout << "No session with " << pack.remote() << '\n';
+			}
 		});
 	}
 

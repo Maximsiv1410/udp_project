@@ -18,8 +18,10 @@ struct peer {
 
 class session {
 
-	asio::ip::udp::endpoint caller;
-	asio::ip::udp::endpoint callee;
+	asio::ip::udp::endpoint caller; // sip
+	asio::ip::udp::endpoint callee; // sip
+
+
 
 	session_status status; // or atomic?
 

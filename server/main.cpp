@@ -2,7 +2,7 @@
 
 
 int main() {
-	media_server server(4, 5060, 45566);
+	media_server server(4, 5060, 45777);
 	server.start();
 
 	std::cin.get();

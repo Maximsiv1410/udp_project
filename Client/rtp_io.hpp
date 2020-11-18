@@ -3,28 +3,20 @@
 
 #include <QtCore>
 #include <QByteArray>
+#include <QImage>
+#include <QImageReader>
+#include <QBuffer>
 
 #include "Network/rtp/rtp.hpp"
+#include "opencv2/highgui.hpp"
+
 using namespace net;
 
 #define MAX_PART_SIZE 1300
 
 struct frame_data {
-    std::shared_ptr<QByteArray> image;
-
-    std::uint16_t parts;
-    std::uint16_t overage;
-    std::uint32_t id;
-
-    frame_data() = default;
-
-    frame_data(std::shared_ptr<QByteArray> & ptrImg, std::uint32_t ID)
-        : image{ptrImg},
-          id{ID}
-    {
-        overage = image->size() % MAX_PART_SIZE;
-        parts = (image->size() - overage) + (overage > 0);
-    }
+   cv::Mat frame;
+   std::size_t id = 0;
 };
 
 
@@ -48,11 +40,14 @@ public:
         });
     }
 
-    void cache_frame(std::shared_ptr<QByteArray> & img, std::uint32_t frame_id) {
+    void cache_frame(cv::Mat & img, std::size_t frame_id) {
         frames_out.push(frame_data{img, frame_id});
         send_frame();
     }
 
+    asio::ip::udp::endpoint local() {
+        return sock.local_endpoint();
+    }
 
 private:
     void received_packet(realtime::rtp_packet & pack) {
@@ -61,18 +56,24 @@ private:
         if (pack.payload().size() >= sizeof(header)) {
             std::memcpy(&header, pack.payload().data(), sizeof(header));
             if (header.frame_no == frame_in_counter) {
-                std::memcpy(curr_frame->data(), pack.payload().data() + sizeof(header), header.part_size);
+                std::memcpy(curr_frame.data(), pack.payload().data() + sizeof(header), header.part_size);
                 frame_offset += header.part_size;
+
                 if (frame_offset == header.full_size) {
                     frame_in_counter++;
                     // data race condition may exist
-                    emit frame_gathered(std::move(curr_frame));
-                    curr_frame.reset();
+                    QByteArray bytes = QByteArray::fromRawData((const char*)(curr_frame.data()), curr_frame.size());
+                    QBuffer buffer(&bytes);
+                    QImageReader reader(&buffer);
+                    QImage img = reader.read();
+
+                    emit frame_gathered(img);
+                    curr_frame.clear();
                 }
             }
             else if (header.frame_no == frame_in_counter + 1) {
                 // just next frame
-                curr_frame->resize(header.full_size);
+                curr_frame.resize(header.full_size);
                 frame_offset = 0;
             }
             else {
@@ -95,32 +96,39 @@ private:
             bool attempt = frames_out.try_pop(fd);
             if (!attempt) return;
 
-            std::size_t offset = 0;
-            for (std::uint16_t i = 0; i < fd.parts; i++) {
+            std::vector<uchar> image;
+
+            std::vector<int> quality_params(2);
+            quality_params[0] = CV_IMWRITE_JPEG_QUALITY; // Кодек JPEG
+            quality_params[1] = 20;
+            cv::imencode(".jpg", fd.frame, image, quality_params);
+
+            std::size_t img_overage = image.size() % MAX_PART_SIZE;
+            std::size_t img_parts = ((image.size() - img_overage) / MAX_PART_SIZE) + (img_overage > 0);
+
+            std::size_t img_offset = 0;
+            for (std::uint16_t i = 0; i < img_parts; i++) {
+
+
                 realtime::rtp_packet packet;
 
                 realtime::video_header videoHeader;
                 videoHeader.frame_no = fd.id;
-                videoHeader.parts = fd.parts;
+                videoHeader.parts = img_parts;
                 videoHeader.part_no = i;
-                videoHeader.full_size = fd.image->size();
-                if (i == fd.parts - 1) {
-                    if (fd.overage) {
-                        videoHeader.part_size = fd.overage;
-                    }
-                    else {
-                        videoHeader.part_size = MAX_PART_SIZE;
-                    }
-                }
+                videoHeader.full_size = image.size();
+
+                if (i == img_parts - 1 && img_overage) {
+                    videoHeader.part_size = img_overage;
+                } else videoHeader.part_size = MAX_PART_SIZE;
 
                 packet.payload().resize(sizeof(videoHeader) + videoHeader.part_size);
 
-                std::memcpy(packet.payload().data(), fd.image->data() + offset, sizeof(videoHeader));
-                offset += sizeof(videoHeader);
+                std::memcpy(packet.payload().data(), (char*)&videoHeader, sizeof(videoHeader));
+                std::memcpy(packet.payload().data() + sizeof(videoHeader), image.data(), videoHeader.part_size);
+                img_offset += videoHeader.part_size;
 
-                std::memcpy(packet.payload().data(), fd.image->data() + offset, videoHeader.part_size);
-                offset += videoHeader.part_size;
-
+                packet.set_remote(this->sock.remote_endpoint());
                 enqueue(packet);
             }
             init_send();
@@ -128,12 +136,14 @@ private:
 
     }
 
+
+
 signals:
-    void frame_gathered(std::shared_ptr<std::vector<char>> frame);
+    void frame_gathered(QImage frame);
 
 private:
     /* temporary data for gathering frame */
-    std::shared_ptr<std::vector<char>> curr_frame;
+    std::vector<uchar> curr_frame;
     std::atomic<std::uint16_t> frame_in_counter{0};
     std::size_t frame_offset{0};
     std::size_t frame_parts{0};

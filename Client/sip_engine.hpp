@@ -92,14 +92,7 @@ public:
 
     }
 
-    void set_begin_handler(std::function<void(sip::client_session)> handler) {
-        // call 'handler' when sip-session is established
 
-    }
-
-    void set_end_handler(std::function<void(sip::client_session)> handler) {
-        // call 'handler' when sip-session was finished
-    }
 
     void do_register(std::string me) {
         if (role == sip::role::empty && status == sip::status::Idle) {
@@ -123,7 +116,7 @@ public:
         }
     }
 
-    void invite(std::string who) {
+    void invite(std::string who, const asio::ip::udp::endpoint & my_rtp_ep) {
         if (role == sip::role::empty && status == sip::status::Idle) {
             session.other = who;
             sip::request request;
@@ -133,6 +126,7 @@ public:
             request.add_header("CSeq", std::to_string(cseq) + " INVITE");
             request.add_header("To", who);
             request.add_header("From", session.me);
+            request.add_header("MYRTPPORT", std::to_string(my_rtp_ep.port()));
             request.set_remote(sock.remote_endpoint());
 
             auto wrapper = sip::message_wrapper{std::make_unique<sip::request>(std::move(request))};
@@ -147,7 +141,7 @@ public:
     }
 
     void ack() {
-        if (role == sip::role::caller && status == sip::status::RingingOKReceived) {
+       if (role == sip::role::caller && status == sip::status::RingingOKReceived) {
             sip::request request;
             request.set_method("ACK");
             request.set_uri(session.other);
@@ -161,7 +155,6 @@ public:
 
             status = sip::status::InAction;
 
-            begin_handler(session);
         }
         else {
             qDebug() << "Wrong role/status to send ACK\n";
@@ -331,7 +324,7 @@ private:
 
             status = sip::status::InviteRingingSent;
 
-            emit incoming_call(request.headers()["From"]);
+            emit incoming_call();
 
         }
         else {
@@ -342,7 +335,6 @@ private:
     void on_ack(sip::request & request) {
         if (role == sip::role::callee && status == sip::status::InviteOKSent) {
             // emit on_media_start() => where we will make_unique<rtp_io>(request.headers()[RTPPORT])
-            begin_handler(session);
         }
         else {
             qDebug() << "Wrong role/status to receive ACK\n";
@@ -352,7 +344,6 @@ private:
     void on_bye(sip::request & request) {
         if (role != sip::role::empty && status == sip::status::InAction) {
             this->ok(ok_reason::onBye);
-            end_handler(session);
             emit finishing_call();
         }
         else {
@@ -376,7 +367,7 @@ public slots:
 
 signals:
     // display incoming call on form
-    void incoming_call(std::string who);
+    void incoming_call();
 
     void finishing_call();
 
@@ -392,8 +383,8 @@ private:
     sip::client_session session;
     std::atomic<uint16_t> cseq{0};
 
-    std::function<void(sip::client_session)> begin_handler;
-    std::function<void(sip::client_session)> end_handler;
+    //std::function<void(sip::client_session)> begin_handler;
+    //std::function<void(sip::client_session)> end_handler;
 
     std::map<std::string, void((sip_engine::*)(sip::response&))> response_map;
     std::map<std::string, void((sip_engine::*)(sip::request&))> request_map;
