@@ -75,6 +75,7 @@ private:
                 // just next frame
                 curr_frame.resize(header.full_size);
                 frame_offset = 0;
+                frame_in_counter++;
             }
             else {
                 // reordering happened
