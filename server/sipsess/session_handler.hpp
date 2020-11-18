@@ -1,6 +1,7 @@
 #pragma once
 #include <boost/asio.hpp>
 #include <iostream>
+#include <optional>
 
 #include "../../Network/sip/sip.hpp"
 #include "session.hpp"
@@ -44,16 +45,24 @@ public:
 		}
 	}
 
-	void add_session() {
-
+	void add_session(const asio::ip::udp::endpoint & caller, const asio::ip::udp::endpoint & callee) {
+		sessions.emplace_back(caller, callee);
 	}
 
 	bool has_session(const asio::ip::udp::endpoint & ep) {
-		return true;
+		for (auto & s : sessions) {
+			if (s.is_participant(ep)) return true;
+		}
+		return false;
 	}
 
-	 asio::ip::udp::endpoint get_partner(const asio::ip::udp::endpoint & ep) {
-		return {};
+	std::optional<asio::ip::udp::endpoint> get_partner(const asio::ip::udp::endpoint & ep) {
+		for (auto & s : sessions) {
+			if (s.is_participant(ep)) {
+				return std::make_optional(s.partner(ep));
+			}
+		}
+		return std::nullopt;
 	}
 
 	void process(sip::message & msg) {
@@ -90,24 +99,54 @@ private:
 
 	void tracked_invite(sip::request & request) {
 		if (dbase.count(request.headers()["To"])) {
-			//sessions.emplace_back(dbase[request.headers()["To"]], request.remote());
-
+			add_session(request.remote(), dbase[request.headers()["To"]]);
 
 			std::cout << "tracked invitation => redirecting from " << request.headers()["From"]  << "("
 			<< request.remote() << ") to " << request.headers()["To"] << "(" << dbase[request.headers()["To"]] << ")\n";
 
 			request.set_remote(dbase[request.headers()["To"]]);
+			request.add_header("SERVERRTPPORT", std::to_string(local.port()));
+
 			auto wrapper = sip::message_wrapper{std::make_unique<sip::request>(std::move(request))};
 			this->async_send(wrapper);
+
 		}
 	}
 
 	void tracked_ack(sip::request & request) {
+		if (dbase.count(request.headers()["From"])) {
+			if (!has_session(request.remote())) return;
 
+			auto peer = get_partner(request.remote());
+			if (!peer.has_value()) return;
+
+			for (auto &s : sessions) {
+				if (s.is_participant(*peer)) {
+					s.set_status(session_status::happening);
+				}
+			}
+
+			request.set_remote(*peer);
+
+			auto wrapper = sip::message_wrapper{std::make_unique<sip::request>(std::move(request))};
+			this->async_send(wrapper);
+
+
+		}
 	}
 
 	void tracked_bye(sip::request & request) {
+		if (dbase.count(request.headers()["From"])) {
+			if (!has_session(request.remote())) return;
 
+			auto peer = get_partner(request.remote());
+			if (!peer.has_value()) return;
+
+			request.set_remote(*peer);
+
+			auto wrapper = sip::message_wrapper{std::make_unique<sip::request>(std::move(request))};
+			this->async_send(wrapper);
+ 		}
 	}
 
 	//////////////////////////////////////////////////
@@ -120,6 +159,19 @@ private:
 	}
 
 	void tracked_ok(sip::response & response) {
-		
+		if (dbase.count(response.headers()["From"])) {
+			if (!has_session(response.remote())) return;
+
+			if (response.headers()["CSeq"].find("BYE") != std::string::npos) {
+				auto peer = get_partner(response.remote());
+				if (!peer.has_value()) return;
+
+				response.set_remote(*peer);
+
+				auto wrapper = sip::message_wrapper{std::make_unique<sip::response>(std::move(response))};
+				this->async_send(wrapper);
+			}
+
+		}
 	}
 };

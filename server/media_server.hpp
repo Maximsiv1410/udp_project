@@ -41,8 +41,11 @@ public:
 		rtpserv.set_callback([this](realtime::rtp_packet && pack)
 		{
 			if (sipper.has_session(pack.remote())) {
-				pack.set_remote(sipper.get_partner(pack.remote()));
-				rtpserv.async_send(pack);
+				auto peer = sipper.get_partner(pack.remote());
+				if (peer.has_value()) {
+					pack.set_remote(*peer);
+					rtpserv.async_send(pack);
+				}
 			}
 		});
 	}

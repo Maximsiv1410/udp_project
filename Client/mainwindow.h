@@ -2,13 +2,16 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QCamera>
-#include <QCameraImageCapture>
-#include <QMediaRecorder>
-#include <QScopedPointer>
+#include <QGraphicsScene>
+#include <QGraphicsPixmapItem>
+#include <QImage>
+#include <QPixmap>
+#include <QCloseEvent>
+#include <QMessageBox>
 
 #include "rtp_io.hpp"
 #include "sip_engine.hpp"
+#include "opencv2/highgui.hpp"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -22,20 +25,17 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-    void setupCamera(const QCameraInfo & cameraInfo);
 
 private slots:
     //void on_frame_gathered(std::shared_ptr<std::vector<char>> frame);
 
-    void processCapturedImage(int requestId, const QImage& img);
-
     void incoming_call(std::string from);
-
-    void takeScreen();
 
     void startCall();
 
     void on_registerBtn_clicked();
+
+    void on_startBtn_clicked();
 
 private:
     using work_entity = asio::io_context::work;
@@ -43,13 +43,9 @@ private:
 
     Ui::MainWindow *ui;
 
-    QScopedPointer<QCamera> camera;
-    QScopedPointer<QCameraImageCapture> imageCapture;
-    QScopedPointer<QMediaRecorder> mediaRecorder;
 
-    QImageEncoderSettings imageSettings;
-    QAudioEncoderSettings audioSettings;
-    QVideoEncoderSettings videoSettings;
+    QGraphicsPixmapItem pixmap;
+    cv::VideoCapture video;
 
     std::unique_ptr<sip_engine> sipper;
     std::unique_ptr<rtp_io> rtp_service;
@@ -57,8 +53,6 @@ private:
     asio::io_context ios;
     work_ptr work;
     std::vector<std::thread> task_force;
-
-
 
 };
 #endif // MAINWINDOW_H

@@ -30,11 +30,13 @@ HEADERS += \
 FORMS += \
     mainwindow.ui
 
-INCLUDEPATH += C:\Dependencies\boost1_73_0
-INCLUDEPATH += C:\Users\Maxim\Desktop\voip\
+INCLUDEPATH +=    "C:\Dependencies\boost1_73_0"
+INCLUDEPATH +=    "C:\Users\Maxim\Desktop\voip"
+INCLUDEPATH +=    "C:\Dependencies\opencv\build\include"
 
 
-LIBS += "-LC:\Dependencies\boost1_73_0\lib64-msvc-14.1"
+LIBS +=  "-LC:\Dependencies\boost1_73_0\lib64-msvc-14.1"
+LIBS +=  -L$$(OPENCV_DIR)\lib -lopencv_world343d
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

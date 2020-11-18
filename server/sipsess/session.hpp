@@ -17,7 +17,6 @@ struct peer {
 };
 
 class session {
-	mutable std::mutex mtx;
 
 	asio::ip::udp::endpoint caller;
 	asio::ip::udp::endpoint callee;
@@ -25,7 +24,7 @@ class session {
 	session_status status; // or atomic?
 
 public:
-	session(asio::ip::udp::endpoint & caller, asio::ip::udp::endpoint & callee) 
+	session(const asio::ip::udp::endpoint & caller, const asio::ip::udp::endpoint & callee) 
 	: caller(caller)
 	, callee(callee)
 	, status(session_status::pending)
@@ -33,8 +32,9 @@ public:
 
 	}
 
+	session(session&&) = default;
+
 	bool is_participant(const asio::ip::udp::endpoint & ep) {
-		std::lock_guard<std::mutex> lock(mtx);
 		if (ep == caller || ep == callee) {
 			return true;
 		}
@@ -42,15 +42,17 @@ public:
 	}
 
 	// get info about person to send data
-	asio::ip::udp::endpoint & partner(asio::ip::udp::endpoint & ep) {
-		std::lock_guard<std::mutex> lock(mtx);
+	asio::ip::udp::endpoint & partner(const asio::ip::udp::endpoint & ep) {
 		if (caller != ep) return caller;
 		if (callee != ep) return callee;
 	}
 
 	bool alive() {
-		std::lock_guard<std::mutex> lock(mtx);
 		return status == session_status::happening;
+	}
+
+	void set_status(session_status stat) {
+		status = stat;
 	}
 
 };

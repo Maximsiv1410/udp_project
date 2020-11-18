@@ -125,7 +125,6 @@ public:
 
     void invite(std::string who) {
         if (role == sip::role::empty && status == sip::status::Idle) {
-            qDebug() << sock.local_endpoint().address().to_string().c_str() << " " <<sock.local_endpoint().port() << '\n';
             session.other = who;
             sip::request request;
             request.set_method("INVITE");
@@ -171,15 +170,25 @@ public:
 
     void ok(ok_reason reason) {
         if (role != sip::role::empty && status != sip::status::Idle) {
-            if (reason == ok_reason::onInvite) {
-                sip::request request;
+            sip::response response;
+            response.set_status("OK");
+            response.set_code(200);
+            response.set_version("SIP/2.0");
+            response.add_header("To", session.other);
+            response.add_header("From", session.me);
+            response.set_remote(session.through);
 
+            if (reason == ok_reason::onInvite) {
+                response.add_header("CSeq", std::to_string(cseq++) + " INVITE");
             }
             else if (reason == ok_reason::onBye){
-
+                response.add_header("CSeq", std::to_string(cseq++) + " BYE");
             }
+            auto wrapper = sip::message_wrapper{std::make_unique<sip::response>(std::move(response))};
+            this->async_send(wrapper);
 
-            // async_send here
+            role = sip::role::empty;
+            status = sip::status::Idle;
         }
         else {
             qDebug() << "Wrong role/status to send OK\n";
@@ -292,11 +301,37 @@ private:
             role = sip::role::callee;
             status = sip::status::InviteReceived;
 
-            // send 100 Trying
+            sip::response try_response;
+            try_response.set_code(100);
+            try_response.set_version("SIP/2.0");
+            try_response.set_status("Trying");
+            try_response.add_header("To", session.other);
+            try_response.add_header("From", session.me);
+            try_response.add_header("CSeq", request.headers()["CSeq"]); // or to_string(cseq) + "INVITE"?
+            try_response.set_remote(session.through);
+
+            auto try_wrapper = sip::message_wrapper{std::make_unique<sip::response>(std::move(try_response))};
+            this->async_send(try_wrapper);
+
+            status = sip::status::InviteTryingSent;
 
             qDebug() << "received invite from " << request.headers()["From"].c_str() << "\n";
+
+            sip::response ring_response;
+            ring_response.set_code(180);
+            ring_response.set_version("SIP/2.0");
+            ring_response.set_status("Ringing");
+            ring_response.add_header("To", session.other);
+            ring_response.add_header("From", session.me);
+            ring_response.add_header("CSeq", request.headers()["CSeq"]); // or to_string(cseq) + "INVITE"?
+            ring_response.set_remote(session.through);
+
+            auto ring_wrapper = sip::message_wrapper{std::make_unique<sip::response>(std::move(ring_response))};
+            this->async_send(ring_wrapper);
+
+            status = sip::status::InviteRingingSent;
+
             emit incoming_call(request.headers()["From"]);
-            // send 180 Ringing and emit signal to notify MainWindow
 
         }
         else {
@@ -305,8 +340,13 @@ private:
     }
 
     void on_ack(sip::request & request) {
-        // emit on_media_start() => where we will make_unique<rtp_io>(request.headers()[RTPPORT])
-        begin_handler(session);
+        if (role == sip::role::callee && status == sip::status::InviteOKSent) {
+            // emit on_media_start() => where we will make_unique<rtp_io>(request.headers()[RTPPORT])
+            begin_handler(session);
+        }
+        else {
+            qDebug() << "Wrong role/status to receive ACK\n";
+        }
     }
 
     void on_bye(sip::request & request) {

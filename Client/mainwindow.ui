@@ -14,17 +14,17 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QPushButton" name="shotButton">
+   <widget class="QPushButton" name="startBtn">
     <property name="geometry">
      <rect>
-      <x>630</x>
-      <y>390</y>
+      <x>620</x>
+      <y>400</y>
       <width>101</width>
       <height>41</height>
      </rect>
     </property>
     <property name="text">
-     <string>screen shot</string>
+     <string>Start</string>
     </property>
    </widget>
    <widget class="QLineEdit" name="callName">
@@ -58,16 +58,6 @@
     </property>
     <property name="text">
      <string>Call</string>
-    </property>
-   </widget>
-   <widget class="QCameraViewfinder" name="partnerViewFinder" native="true">
-    <property name="geometry">
-     <rect>
-      <x>410</x>
-      <y>60</y>
-      <width>379</width>
-      <height>319</height>
-     </rect>
     </property>
    </widget>
    <widget class="QPushButton" name="stopCall">
@@ -106,6 +96,16 @@
      </rect>
     </property>
    </widget>
+   <widget class="QGraphicsView" name="graphicsView">
+    <property name="geometry">
+     <rect>
+      <x>400</x>
+      <y>60</y>
+      <width>391</width>
+      <height>331</height>
+     </rect>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -130,7 +130,7 @@
  <resources/>
  <connections>
   <connection>
-   <sender>shotButton</sender>
+   <sender>startBtn</sender>
    <signal>clicked()</signal>
    <receiver>MainWindow</receiver>
    <slot>takeScreen()</slot>
@@ -163,7 +163,6 @@
   </connection>
  </connections>
  <slots>
-  <slot>takeScreen()</slot>
   <slot>startCall()</slot>
  </slots>
 </ui>
