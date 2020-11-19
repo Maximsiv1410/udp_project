@@ -10,7 +10,7 @@
 #include <QMessageBox>
 
 #include "rtp_io.hpp"
-#include "sip_engine.hpp"
+#include "sip_engine.h"
 #include "opencv2/highgui.hpp"
 
 QT_BEGIN_NAMESPACE

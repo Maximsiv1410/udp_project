@@ -19,12 +19,13 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    sip_engine.cpp
 
 HEADERS += \
     mainwindow.h \
     rtp_io.hpp \
-    sip_engine.hpp
+    sip_engine.h
 
 FORMS += \
     mainwindow.ui

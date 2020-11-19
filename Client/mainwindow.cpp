@@ -75,10 +75,6 @@ void MainWindow::on_startBtn_clicked()
 }
 
 
-
-
-
-
 void MainWindow::frame_gathered(QImage frame) {
     qDebug() << "frame got!!! form\n";
     partnerPixmap.setPixmap(QPixmap::fromImage(frame.rgbSwapped()));
@@ -108,8 +104,6 @@ void MainWindow::startStream() {
         return;
     }
 
-
-
     if (video.open(0)) {
          ui->startBtn->setText("Stop");
          std::size_t id = 0;
@@ -135,6 +129,25 @@ void MainWindow::startStream() {
             qApp->processEvents();
         }
     }
+}
+
+
+void MainWindow::on_callButton_clicked()
+{
+    if (!sipper) return;
+    if (ui->callName->text().isEmpty()) return;
+
+    rtp_service.reset(new rtp_io(ios, "127.0.0.1", 45777));
+    rtp_service->start(true);
+
+    connect(rtp_service.get(), &rtp_io::frame_gathered, this, &MainWindow::frame_gathered);
+
+    ui->partnerGraphicsView->setScene(new QGraphicsScene(this));
+    ui->partnerGraphicsView->scene()->addItem(&partnerPixmap);
+
+    sipper->invite(ui->callName->text().toStdString());
+
+    startStream();
 }
 
 
@@ -176,25 +189,3 @@ MainWindow::~MainWindow()
     }
 
 }
-
-
-
-void MainWindow::on_callButton_clicked()
-{
-    //ui->callButton->setEnabled(false);
-
-    if (!sipper) return;
-    if (ui->callName->text().isEmpty()) return;
-    rtp_service.reset(new rtp_io(ios, "127.0.0.1", 45777));
-    rtp_service->start(true);
-
-    connect(rtp_service.get(), &rtp_io::frame_gathered, this, &MainWindow::frame_gathered);
-
-    ui->partnerGraphicsView->setScene(new QGraphicsScene(this));
-    ui->partnerGraphicsView->scene()->addItem(&partnerPixmap);
-
-    sipper->invite(ui->callName->text().toStdString());
-
-    startStream();
-}
-
