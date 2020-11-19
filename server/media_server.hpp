@@ -40,8 +40,8 @@ public:
 
 		rtpserv.set_callback([this](realtime::rtp_packet && pack)
 		{
-			if (sipper.has_session(pack.remote())) {
-				auto peer = sipper.get_partner(pack.remote());
+			if (sipper.has_session_rtp(pack.remote())) {
+				auto peer = sipper.get_partner_rtp(pack.remote());
 				if (peer.has_value()) {
 					pack.set_remote(*peer);
 					rtpserv.async_send(pack);

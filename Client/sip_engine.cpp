@@ -1,10 +1,11 @@
 #include "sip_engine.h"
 
-    sip_engine::sip_engine(asio::io_context & ioc, std::string address, std::uint16_t port)
+    sip_engine::sip_engine(asio::io_context & ioc, std::string address, std::uint16_t port, std::uint16_t rtpport)
         : sip::client(ioc, sock)
         , ios(ioc)
         , remote(asio::ip::address::from_string(address), port)
         , sock(ioc)
+        , rtpport(rtpport)
     {
         sock.open(asio::ip::udp::v4());
         sock.connect(remote);
@@ -39,7 +40,8 @@
             request.set_uri("sip:server");
             request.set_version("SIP/2.0");
             request.add_header("To", me);
-            request.add_header("From", me);
+            request.add_header("From", me);         
+            request.add_header("MYRTP", std::to_string(rtpport));
             request.set_remote(sock.remote_endpoint());
 
             auto wrapper = sip::message_wrapper{std::make_unique<sip::request>(std::move(request))};
@@ -62,6 +64,7 @@
             request.add_header("CSeq", std::to_string(cseq) + " INVITE");
             request.add_header("To", who);
             request.add_header("From", session.me);
+            request.add_header("MYRTP", std::to_string(rtpport));
             request.set_remote(sock.remote_endpoint());
 
             auto wrapper = sip::message_wrapper{std::make_unique<sip::request>(std::move(request))};

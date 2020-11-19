@@ -21,18 +21,19 @@ MainWindow::MainWindow(QWidget *parent)
     auto threads = std::thread::hardware_concurrency();
     if (!threads) threads = 2;
 
-    for (std::size_t i = 0; i < 4; i++) {
+    for (std::size_t i = 0; i < 2; i++) {
         task_force.push_back(std::thread([this]{ ios.run(); }));
     }
 
-    //sipper.set_begin_handler([](){});
-    //sipper.set_end_handler([](){});
 
-    sipper = std::make_unique<sip_engine>(ios, "127.0.0.1", 5060);
+    rtp_service.reset(new rtp_io(ios, "127.0.0.1", 45777));
+    rtp_service->start(true);
+    connect(rtp_service.get(), &rtp_io::frame_gathered, this, &MainWindow::frame_gathered);
+
+
+    sipper = std::make_unique<sip_engine>(ios, "127.0.0.1", 5060, rtp_service->local().port());
     sipper->start(true);
-
     connect(sipper.get(), &sip_engine::incoming_call, this, &MainWindow::incoming_call);
-
 
 }
 
@@ -84,10 +85,6 @@ void MainWindow::frame_gathered(QImage frame) {
 
 
 void MainWindow::incoming_call(/* session_info */) {
-    rtp_service.reset(new rtp_io(ios, "127.0.0.1", 45777));
-    rtp_service->start(true);
-
-    connect(rtp_service.get(), &rtp_io::frame_gathered, this, &MainWindow::frame_gathered);
 
     ui->partnerGraphicsView->setScene(new QGraphicsScene(this));
     ui->partnerGraphicsView->scene()->addItem(&partnerPixmap);
@@ -127,6 +124,7 @@ void MainWindow::startStream() {
 
             }
             qApp->processEvents();
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
     }
 }
@@ -136,11 +134,6 @@ void MainWindow::on_callButton_clicked()
 {
     if (!sipper) return;
     if (ui->callName->text().isEmpty()) return;
-
-    rtp_service.reset(new rtp_io(ios, "127.0.0.1", 45777));
-    rtp_service->start(true);
-
-    connect(rtp_service.get(), &rtp_io::frame_gathered, this, &MainWindow::frame_gathered);
 
     ui->partnerGraphicsView->setScene(new QGraphicsScene(this));
     ui->partnerGraphicsView->scene()->addItem(&partnerPixmap);

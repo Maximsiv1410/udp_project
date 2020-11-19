@@ -56,7 +56,7 @@ enum class ok_reason {
 class sip_engine : public  QObject, public sip::client {
     Q_OBJECT
 public:
-    sip_engine(asio::io_context & ioc, std::string address, std::uint16_t port);
+    sip_engine(asio::io_context & ioc, std::string address, std::uint16_t port, std::uint16_t rtpport);
 
     void do_register(std::string me);
 
@@ -106,8 +106,8 @@ private:
     sip::client_session session;
     std::atomic<uint16_t> cseq{0};
 
-    //std::function<void(sip::client_session)> begin_handler;
-    //std::function<void(sip::client_session)> end_handler;
+    std::uint16_t rtpport;
+
 
     std::map<std::string, void((sip_engine::*)(sip::response&))> response_map;
     std::map<std::string, void((sip_engine::*)(sip::request&))> request_map;
