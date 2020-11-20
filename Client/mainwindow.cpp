@@ -124,7 +124,6 @@ void MainWindow::startStream() {
 
             }
             qApp->processEvents();
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
     }
 }

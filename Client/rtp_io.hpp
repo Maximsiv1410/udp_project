@@ -6,6 +6,7 @@
 #include <QImage>
 #include <QImageReader>
 #include <QBuffer>
+#include <fstream>
 
 #include "Network/rtp/rtp.hpp"
 #include "opencv2/highgui.hpp"
@@ -61,15 +62,15 @@ private:
 
         if (pack.payload().size() >= sizeof(header)) {
             std::memcpy(&header, pack.payload().data(), sizeof(header));
-            if (header.frame_no == frame_in_counter) {
-
-                if (!curr_frame.size()) {
+            if (header.frame_no == frame_in_counter /*&& header.part_no == part_number*/) {
+            qDebug() << "frame_no " << header.frame_no << ", part_no " << header.part_no << '\n';
+                if (!frame_offset) {
                     qDebug() << "new frame\n";
-                    frame_in_counter = header.frame_no;
+                    part_number = 1;
                     curr_frame.resize(header.full_size);
                 }
 
-                std::memcpy(curr_frame.data(), pack.payload().data() + sizeof(header), header.part_size);
+                std::memcpy(curr_frame.data() + frame_offset, pack.payload().data() + sizeof(header), header.part_size);
                 frame_offset += header.part_size;
 
                 if (frame_offset == header.full_size) {
@@ -77,33 +78,38 @@ private:
                             << header.full_size << " vec size: "
                             << curr_frame.size() << '\n';
 
-                    // BUGGY
+                    /* // BUGGY
                     QByteArray bytes = QByteArray::fromRawData(reinterpret_cast<const char*>(curr_frame.data()), curr_frame.size());
                     QBuffer buffer(&bytes);
                     QImageReader reader(&buffer);
-                    QImage img = reader.read();
+                    QImage img = reader.read(); */
                     // BUGGY
-                    qDebug() << "QImage size: " << img.sizeInBytes() << '\n';
+                   // emit frame_gathered(img);
 
-                    emit frame_gathered(img);
-                    curr_frame.clear();
+                   cv::Mat img = cv::imdecode(curr_frame, 1);
+                   cv::imwrite("C:\\Users\\Maxim\\Desktop\\income.jpg", img);
+
+
+                   frame_offset = 0;
+                   curr_frame.clear();
                 }
             }
             else if (header.frame_no == frame_in_counter + 1) {
-                qDebug() << "next frame\n";
+                qDebug() << "next frame, frame_no " << header.frame_no << ", part_no " << header.part_no << '\n';
                 curr_frame.resize(header.full_size);
                 frame_offset = 0;
+                part_number++;
                 frame_in_counter = header.frame_no;
 
                 std::memcpy(curr_frame.data(), pack.payload().data() + sizeof(header), header.part_size);
                 frame_offset += header.part_size;
             }
             else {
-                qDebug() << "reordering " << header.frame_no << "\n";;
+                qDebug() << "reordering " << header.frame_no << "\n";
             }
         }
         else {
-            // corrupted
+            qDebug() << "corruption\n";
         }
     }
 
@@ -168,7 +174,7 @@ private:
     std::vector<uchar> curr_frame;
     std::uint16_t frame_in_counter{0};
     std::size_t frame_offset{0};
-    std::size_t frame_parts{0};
+    std::size_t part_number{0};
 
     asio::io_context & ios;
     asio::ip::udp::endpoint remote;
