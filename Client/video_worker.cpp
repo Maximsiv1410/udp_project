@@ -17,8 +17,6 @@ void video_worker::start_stream() {
     capture.set(CV_CAP_PROP_FRAME_WIDTH, 640);
     capture.set(CV_CAP_PROP_FRAME_HEIGHT, 480);
 
-
-
     std::uint32_t id = 0;
     while(capture.isOpened()) {
         cv::Mat frame;

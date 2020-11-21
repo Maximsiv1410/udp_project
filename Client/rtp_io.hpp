@@ -37,9 +37,7 @@ public:
           ios(ios),
           remote(asio::ip::address::from_string(addr), port),
           sock(ios)
-
     {
-
         sock.open(asio::ip::udp::v4());
         sock.connect(remote);
         this->set_callback([this](realtime::rtp_packet && pack)
@@ -145,7 +143,6 @@ private:
         std::size_t img_offset = 0;
         for (std::uint16_t i = 1; i <= img_parts; i++) {
 
-
             realtime::rtp_packet packet;
             packet.header().csrc_count(0);
 
@@ -170,21 +167,19 @@ private:
         }
         //qDebug() << "sending frame with id " << fd->id << " sizeof " << image.size() << '\n';
         init_send();
-
     }
-
 
 
 signals:
     void frame_gathered(QPixmap frame);
 
 private:
-    std::mutex mtx;
     /* temporary data for gathering frame */
     std::vector<uchar> curr_frame;
     std::uint16_t frame_in_counter{0};
     std::size_t frame_offset{0};
     std::size_t curr_part{1};
+    /* temporary data for gathering frame */
 
     asio::io_context & ios;
     asio::ip::udp::endpoint remote;

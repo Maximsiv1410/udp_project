@@ -70,7 +70,6 @@ public:
 
     void on_message(sip::message & message);
 
-
 private:
     void on_trying(sip::response & response);
 
@@ -107,7 +106,6 @@ private:
     std::atomic<uint16_t> cseq{0};
 
     std::uint16_t rtpport;
-
 
     std::map<std::string, void((sip_engine::*)(sip::response&))> response_map;
     std::map<std::string, void((sip_engine::*)(sip::request&))> request_map;
