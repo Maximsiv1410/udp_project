@@ -18,9 +18,9 @@ using namespace net;
 
 struct frame_data {
    cv::Mat frame;
-   std::size_t id = 0;
+   std::uint32_t id = 0;
 
-   frame_data(const cv::Mat & mat, std::size_t id)
+   frame_data(const cv::Mat & mat, std::uint32_t id)
        : frame(mat)
        , id(id)
    {}
@@ -39,6 +39,7 @@ public:
           sock(ios)
 
     {
+
         sock.open(asio::ip::udp::v4());
         sock.connect(remote);
         this->set_callback([this](realtime::rtp_packet && pack)
@@ -47,8 +48,8 @@ public:
         });
     }
 
-    void cache_frame(cv::Mat & img, std::size_t frame_id) {
-        //frames_out.push(frame_data{img, frame_id});
+public slots:
+    void cache_frame(cv::Mat img, std::size_t frame_id) {
         auto frame = std::make_shared<frame_data>(img, frame_id);
         asio::post(ios, [this, frame]{ send_frame(frame); });
     }
@@ -135,7 +136,7 @@ private:
 
         std::vector<int> quality_params(2);
         quality_params[0] = CV_IMWRITE_JPEG_QUALITY; // Кодек JPEG
-        quality_params[1] = 60;
+        quality_params[1] = 50;
         cv::imencode(".jpg", fd->frame, image, quality_params);
 
         std::size_t img_overage = image.size() % MAX_PART_SIZE;

@@ -20,12 +20,14 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
     main.cpp \
     mainwindow.cpp \
-    sip_engine.cpp
+    sip_engine.cpp \
+    video_worker.cpp
 
 HEADERS += \
     mainwindow.h \
     rtp_io.hpp \
-    sip_engine.h
+    sip_engine.h \
+    video_worker.h
 
 FORMS += \
     mainwindow.ui
