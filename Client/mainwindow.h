@@ -11,7 +11,7 @@
 #include <QThread>
 
 #include "video_worker.h"
-#include "rtp_io.hpp"
+#include "rtp_io.h"
 #include "sip_engine.h"
 #include "opencv2/highgui.hpp"
 
@@ -28,7 +28,7 @@ public:
     ~MainWindow();
 
 protected:
-    //void closeEvent(QCloseEvent *event);
+    void closeEvent(QCloseEvent *event);
 
 private slots:
     void frame_gathered(QPixmap frame);
@@ -41,8 +41,8 @@ private slots:
 
     void on_callButton_clicked();
 
-protected:
-    void closeEvent(QCloseEvent *event) override;
+    void on_stopCall_clicked();
+
 private:
     using work_entity = asio::io_context::work;
     using work_ptr = std::unique_ptr<work_entity>;

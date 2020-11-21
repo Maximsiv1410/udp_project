@@ -11,39 +11,34 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
-
     ui->setupUi(this);
     ui->graphicsView->setScene(new QGraphicsScene(this));
     ui->graphicsView->scene()->addItem(&myPixmap);
 
     work.reset(new work_entity(ios));
 
-    auto threads = std::thread::hardware_concurrency();
-    if (!threads) threads = 2;
-
     for (std::size_t i = 0; i < 2; i++) {
         task_force.push_back(std::thread([this]{ ios.run(); }));
     }
 
-
+    // later rtp_service should be created only
+    // when session is established
+    // with PARTICALUAR PORT, SPECIFIED BY SERVER in SDP
+    // what's more => sipper will use callback(signal) to MainWindow
+    // passing there struct session_info{server_port, etc... }
+    // to create rtp_io with server-specified port and start communication
+    // and also it will use callback(signal) to stop commincation over rtp_io
     rtp_service.reset(new rtp_io(ios, "127.0.0.1", 45777));
-    rtp_service->start(true);
     connect(rtp_service.get(), &rtp_io::frame_gathered, this, &MainWindow::frame_gathered);
+    rtp_service->start(true);
 
-
+    // later sip_engine should send to remote x.x.x.x:5060 port
+    // and also listen on localhost:5060, because it's SIP port
     sipper = std::make_unique<sip_engine>(ios, "127.0.0.1", 5060, rtp_service->local().port());
-    sipper->start(true);
     connect(sipper.get(), &sip_engine::incoming_call, this, &MainWindow::incoming_call);
+    sipper->start(true);
 
 }
-
-void MainWindow::on_registerBtn_clicked()
-{
-    if (ui->registerTxt->text().isEmpty()) return;
-
-    sipper->do_register(ui->registerTxt->text().toStdString());
-}
-
 
 void MainWindow::incoming_call(/* session_info */) {
     ui->partnerGraphicsView->setScene(new QGraphicsScene(this));
@@ -85,21 +80,47 @@ void MainWindow::on_callButton_clicked()
     videoThread.start();
 }
 
+void MainWindow::on_registerBtn_clicked()
+{
+    if (ui->registerTxt->text().isEmpty()) return;
+    sipper->do_register(ui->registerTxt->text().toStdString());
+}
+
+void MainWindow::on_stopCall_clicked()
+{
+
+}
+
+/*
+ * display frame, gathered by network
+ */
 void MainWindow::frame_gathered(QPixmap frame) {
     //qDebug() << "frame got!!! form\n";
     partnerPixmap.setPixmap(frame);
     ui->partnerGraphicsView->fitInView(&partnerPixmap, Qt::KeepAspectRatio);
 }
 
+
+/*
+ * display frame, gathered by local camera
+ */
 void MainWindow::display_frame(QPixmap frame) {
     myPixmap.setPixmap(frame);
     ui->graphicsView->fitInView(&myPixmap, Qt::KeepAspectRatio);
 }
 
+
+
+
+
+
+
+
+
 void MainWindow::closeEvent(QCloseEvent *event) {
+    qDebug() << "closing\n";
     event->accept();
 }
-
 
 MainWindow::~MainWindow()
 {
@@ -131,3 +152,5 @@ MainWindow::~MainWindow()
     }
 
 }
+
+
