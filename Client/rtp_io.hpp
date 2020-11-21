@@ -6,6 +6,7 @@
 #include <QImage>
 #include <QImageReader>
 #include <QBuffer>
+#include <QPixmap>
 #include <fstream>
 
 #include "Network/rtp/rtp.hpp"
@@ -71,26 +72,34 @@ private:
 
         if (header.frame_no == frame_in_counter && header.part_no == curr_part) {
             if (!frame_offset) {
-                qDebug() << "[new frame]\n";
+                //qDebug() << "[new frame]\n";
                 frame_offset = 0;
                 curr_part = 1;
                 curr_frame.resize(header.full_size);
             }
 
-            qDebug() << "frame_no " << header.frame_no << ", part_no " << header.part_no << '\n';
+            //qDebug() << "frame_no " << header.frame_no << ", part_no " << header.part_no << '\n';
             std::memcpy(curr_frame.data() + frame_offset, pack.payload().data() + sizeof(header), header.part_size);
             frame_offset += header.part_size;
             curr_part++;
 
             if (frame_offset == header.full_size && header.parts == curr_part - 1) {
-               qDebug() << "frame_no: " << header.frame_no << " ==? "<< frame_in_counter << " completed, full size: "
+              /* qDebug() << "frame_no: " << header.frame_no << " ==? "<< frame_in_counter << " completed, full size: "
                         << header.full_size << " vec size: "
-                        << frame_offset << '\n';
+                        << frame_offset << '\n'; */
 
                frame_in_counter += 1;
 
-               cv::Mat img = cv::imdecode(curr_frame, 1);
-               cv::imwrite("C:\\Users\\Maxim\\Desktop\\income.jpg", img);
+               //cv::Mat img = cv::imdecode(curr_frame, 1);
+               //cv::imwrite("C:\\Users\\Maxim\\Desktop\\income.jpg", img);
+
+               /*/////////////////////////// */
+               QByteArray bytes = QByteArray::fromRawData((const char*)(curr_frame.data()), curr_frame.size());
+               QBuffer buffer(&bytes);
+               QImageReader reader(&buffer);
+               QImage img = reader.read();
+               emit frame_gathered(QPixmap::fromImage(img));
+               /*/////////////////////////// */
 
                frame_offset = 0;
                curr_part = 1;
@@ -101,7 +110,7 @@ private:
         }
 
         else {
-            qDebug() << "reordering happened " << header.frame_no << ", going to next frame\n";
+            //qDebug() << "reordering happened " << header.frame_no << ", part_no: " << header.part_no << ", going to next frame\n";
             frame_in_counter = header.frame_no;
             frame_offset = 0;
             curr_part = 1;
@@ -109,6 +118,7 @@ private:
 
             std::memcpy(curr_frame.data() + frame_offset, pack.payload().data() + sizeof(header), header.part_size);
             frame_offset += header.part_size;
+            curr_part++;
         }
     }
 
@@ -157,7 +167,7 @@ private:
             packet.set_remote(this->sock.remote_endpoint());
             enqueue(packet);
         }
-        qDebug() << "sending frame with id " << fd->id << " sizeof " << image.size() << '\n';
+        //qDebug() << "sending frame with id " << fd->id << " sizeof " << image.size() << '\n';
         init_send();
 
     }
@@ -165,7 +175,7 @@ private:
 
 
 signals:
-    void frame_gathered(QImage frame);
+    void frame_gathered(QPixmap frame);
 
 private:
     std::mutex mtx;

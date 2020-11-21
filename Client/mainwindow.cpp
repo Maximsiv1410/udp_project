@@ -76,9 +76,9 @@ void MainWindow::on_startBtn_clicked()
 }
 
 
-void MainWindow::frame_gathered(QImage frame) {
-    qDebug() << "frame got!!! form\n";
-    partnerPixmap.setPixmap(QPixmap::fromImage(frame.rgbSwapped()));
+void MainWindow::frame_gathered(QPixmap frame) {
+    //qDebug() << "frame got!!! form\n";
+    partnerPixmap.setPixmap(frame);
     ui->partnerGraphicsView->fitInView(&partnerPixmap, Qt::KeepAspectRatio);
 }
 

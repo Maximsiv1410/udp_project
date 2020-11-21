@@ -29,7 +29,7 @@ protected:
     //void closeEvent(QCloseEvent *event);
 
 private slots:
-    void frame_gathered(QImage img);
+    void frame_gathered(QPixmap frame);
 
     void incoming_call();
 
