@@ -60,56 +60,55 @@ private:
     void received_packet(realtime::rtp_packet & pack) {
         realtime::video_header header;
 
-        if (pack.payload().size() >= sizeof(header)) {
-            std::memcpy(&header, pack.payload().data(), sizeof(header));
-            if (header.frame_no == frame_in_counter /*&& header.part_no == part_number*/) {
-            qDebug() << "frame_no " << header.frame_no << ", part_no " << header.part_no << '\n';
-                if (!frame_offset) {
-                    qDebug() << "new frame\n";
-                    part_number = 1;
-                    curr_frame.resize(header.full_size);
-                }
-
-                std::memcpy(curr_frame.data() + frame_offset, pack.payload().data() + sizeof(header), header.part_size);
-                frame_offset += header.part_size;
-
-                if (frame_offset == header.full_size) {
-                   qDebug() << "frame_id: " << header.frame_no << " completed, full size: "
-                            << header.full_size << " vec size: "
-                            << curr_frame.size() << '\n';
-
-                    /* // BUGGY
-                    QByteArray bytes = QByteArray::fromRawData(reinterpret_cast<const char*>(curr_frame.data()), curr_frame.size());
-                    QBuffer buffer(&bytes);
-                    QImageReader reader(&buffer);
-                    QImage img = reader.read(); */
-                    // BUGGY
-                   // emit frame_gathered(img);
-
-                   cv::Mat img = cv::imdecode(curr_frame, 1);
-                   cv::imwrite("C:\\Users\\Maxim\\Desktop\\income.jpg", img);
-
-
-                   frame_offset = 0;
-                   curr_frame.clear();
-                }
-            }
-            else if (header.frame_no == frame_in_counter + 1) {
-                qDebug() << "next frame, frame_no " << header.frame_no << ", part_no " << header.part_no << '\n';
-                curr_frame.resize(header.full_size);
-                frame_offset = 0;
-                part_number++;
-                frame_in_counter = header.frame_no;
-
-                std::memcpy(curr_frame.data(), pack.payload().data() + sizeof(header), header.part_size);
-                frame_offset += header.part_size;
-            }
-            else {
-                qDebug() << "reordering " << header.frame_no << "\n";
-            }
+        if (pack.payload().size() < sizeof(header)) {
+            frame_offset = 0;
+            curr_part = 1;
+            qDebug() << "CORRUPTION\n";
+            return;
         }
+
+        std::memcpy(&header, pack.payload().data(), sizeof(header));
+
+        if (header.frame_no == frame_in_counter && header.part_no == curr_part) {
+            if (!frame_offset) {
+                qDebug() << "[new frame]\n";
+                frame_offset = 0;
+                curr_part = 1;
+                curr_frame.resize(header.full_size);
+            }
+
+            qDebug() << "frame_no " << header.frame_no << ", part_no " << header.part_no << '\n';
+            std::memcpy(curr_frame.data() + frame_offset, pack.payload().data() + sizeof(header), header.part_size);
+            frame_offset += header.part_size;
+            curr_part++;
+
+            if (frame_offset == header.full_size && header.parts == curr_part - 1) {
+               qDebug() << "frame_no: " << header.frame_no << " ==? "<< frame_in_counter << " completed, full size: "
+                        << header.full_size << " vec size: "
+                        << frame_offset << '\n';
+
+               frame_in_counter += 1;
+
+               cv::Mat img = cv::imdecode(curr_frame, 1);
+               cv::imwrite("C:\\Users\\Maxim\\Desktop\\income.jpg", img);
+
+               frame_offset = 0;
+               curr_part = 1;
+               curr_frame.clear();
+            }
+
+
+        }
+
         else {
-            qDebug() << "corruption\n";
+            qDebug() << "reordering happened " << header.frame_no << ", going to next frame\n";
+            frame_in_counter = header.frame_no;
+            frame_offset = 0;
+            curr_part = 1;
+            curr_frame.resize(header.full_size);
+
+            std::memcpy(curr_frame.data() + frame_offset, pack.payload().data() + sizeof(header), header.part_size);
+            frame_offset += header.part_size;
         }
     }
 
@@ -152,7 +151,7 @@ private:
             packet.payload().resize(sizeof(videoHeader) + videoHeader.part_size);
 
             std::memcpy(packet.payload().data(), (char*)&videoHeader, sizeof(videoHeader));
-            std::memcpy(packet.payload().data() + sizeof(videoHeader), image.data(), videoHeader.part_size);
+            std::memcpy(packet.payload().data() + sizeof(videoHeader), image.data() + img_offset, videoHeader.part_size);
             img_offset += videoHeader.part_size;
 
             packet.set_remote(this->sock.remote_endpoint());
@@ -174,7 +173,7 @@ private:
     std::vector<uchar> curr_frame;
     std::uint16_t frame_in_counter{0};
     std::size_t frame_offset{0};
-    std::size_t part_number{0};
+    std::size_t curr_part{1};
 
     asio::io_context & ios;
     asio::ip::udp::endpoint remote;
