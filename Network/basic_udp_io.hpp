@@ -53,9 +53,9 @@ namespace net {
 			return bytes_out.load(std::memory_order_relaxed);
 		}
 
-                unsigned long long read_in() {
-                    return bytes_in.load(std::memory_order_relaxed);
-                }
+        unsigned long long read_in() {
+            return bytes_in.load(std::memory_order_relaxed);
+        }
 
 
 		void start(bool notify = false) {
@@ -66,6 +66,7 @@ namespace net {
 			read();
 		}
 
+		// should it be here?
 		void shutdown() {
 			if (sock_.is_open()) {
 				sock_.close();

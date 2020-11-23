@@ -61,6 +61,5 @@ private:
     std::unique_ptr<rtp_io> rtp_service;
 
     std::vector<std::thread> task_force;
-
 };
 #endif // MAINWINDOW_H

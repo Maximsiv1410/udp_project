@@ -64,7 +64,7 @@
             request.add_header("CSeq", std::to_string(cseq) + " INVITE");
             request.add_header("To", who);
             request.add_header("From", session.me);
-            request.add_header("MYRTP", std::to_string(rtpport));
+            //request.add_header("MYRTP", std::to_string(rtpport));
             request.set_remote(sock.remote_endpoint());
 
             auto wrapper = sip::message_wrapper{std::make_unique<sip::request>(std::move(request))};

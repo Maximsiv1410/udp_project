@@ -43,6 +43,7 @@ public:
 			if (sipper.has_session_rtp(pack.remote())) {
 				auto peer = sipper.get_partner_rtp(pack.remote());
 				if (peer.has_value()) {
+					//std::cout << "redirecting packet from " << pack.remote() << " to " << *peer << '\n';
 					pack.set_remote(*peer);
 					rtpserv.async_send(pack);
 				}
@@ -66,9 +67,6 @@ public:
 		if (!ios.stopped()) {
 			ios.stop();
 		}
-
-		sipper.stop();
-		rtpserv.stop();
 	}
 
 	~media_server() {
@@ -79,6 +77,12 @@ public:
 				thread.join();
 			}
 		}
+
+		// probably here is the best place
+		// because closing before
+		// joining all threads causes data race
+		sipper.stop();
+		rtpserv.stop();
 	}
 
 };

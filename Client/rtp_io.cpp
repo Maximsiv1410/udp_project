@@ -15,6 +15,7 @@ rtp_io::rtp_io(asio::io_context & ios, std::string addr, std::uint16_t port)
 }
 
 void rtp_io::cache_frame(cv::Mat img, std::size_t frame_id) {
+    // or should it be queued and extracted later?
     auto frame = std::make_shared<frame_data>(img, frame_id);
     asio::post(ios, [this, frame]{ send_frame(frame); });
 }
@@ -36,6 +37,7 @@ void rtp_io::received_packet(realtime::rtp_packet & pack) {
 
     std::memcpy(&header, pack.payload().data(), sizeof(header));
 
+    // just ordinary consistently gathering frame
     if (header.frame_no == frame_in_counter && header.part_no == curr_part) {
         if (!frame_offset) {
             //qDebug() << "[new frame]\n";
@@ -48,33 +50,8 @@ void rtp_io::received_packet(realtime::rtp_packet & pack) {
         std::memcpy(curr_frame.data() + frame_offset, pack.payload().data() + sizeof(header), header.part_size);
         frame_offset += header.part_size;
         curr_part++;
-
-        if (frame_offset == header.full_size && header.parts == curr_part - 1) {
-          /* qDebug() << "frame_no: " << header.frame_no << " ==? "<< frame_in_counter << " completed, full size: "
-                    << header.full_size << " vec size: "
-                    << frame_offset << '\n'; */
-
-           frame_in_counter += 1;
-
-           //cv::Mat img = cv::imdecode(curr_frame, 1);
-           //cv::imwrite("C:\\Users\\Maxim\\Desktop\\income.jpg", img);
-
-           /*/////////////////////////// */
-           QByteArray bytes = QByteArray::fromRawData((const char*)(curr_frame.data()), curr_frame.size());
-           QBuffer buffer(&bytes);
-           QImageReader reader(&buffer);
-           QImage img = reader.read();
-           emit frame_gathered(QPixmap::fromImage(img));
-           /*/////////////////////////// */
-
-           frame_offset = 0;
-           curr_part = 1;
-           curr_frame.clear();
-        }
-
-
     }
-
+    // oops, reordering, just skip frame and start gathering next
     else {
         //qDebug() << "reordering happened " << header.frame_no << ", part_no: " << header.part_no << ", going to next frame\n";
         frame_in_counter = header.frame_no;
@@ -85,6 +62,25 @@ void rtp_io::received_packet(realtime::rtp_packet & pack) {
         std::memcpy(curr_frame.data() + frame_offset, pack.payload().data() + sizeof(header), header.part_size);
         frame_offset += header.part_size;
         curr_part++;
+    }
+
+    // shoud it be here or in the body of 'if (header.frame_no == frame_in_counter &&...' ?
+    if (frame_offset == header.full_size && header.parts == curr_part - 1) {
+      /* qDebug() << "frame_no: " << header.frame_no << " ==? "<< frame_in_counter << " completed, full size: "
+                << header.full_size << " vec size: "
+                << frame_offset << '\n'; */
+
+       frame_in_counter += 1;
+
+       QByteArray bytes = QByteArray::fromRawData(reinterpret_cast<const char*>(curr_frame.data()), curr_frame.size());
+       QBuffer buffer(&bytes);
+       QImageReader reader(&buffer);
+       QImage img = reader.read();
+       emit frame_gathered(QPixmap::fromImage(img));
+
+       frame_offset = 0;
+       curr_part = 1;
+       curr_frame.clear();
     }
 }
 
@@ -101,7 +97,7 @@ void rtp_io::send_frame(std::shared_ptr<frame_data> fd) {
 
     std::vector<int> quality_params(2);
     quality_params[0] = CV_IMWRITE_JPEG_QUALITY; // Кодек JPEG
-    quality_params[1] = 50;
+    quality_params[1] = 40;
     cv::imencode(".jpg", fd->frame, image, quality_params);
 
     std::size_t img_overage = image.size() % MAX_PART_SIZE;

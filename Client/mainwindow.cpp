@@ -94,8 +94,9 @@ void MainWindow::on_stopCall_clicked()
 /*
  * display frame, gathered by network
  */
+
 void MainWindow::frame_gathered(QPixmap frame) {
-    //qDebug() << "frame got!!! form\n";
+    //qDebug() << "displaying [REMOTE] frame\n";
     partnerPixmap.setPixmap(frame);
     ui->partnerGraphicsView->fitInView(&partnerPixmap, Qt::KeepAspectRatio);
 }
@@ -105,15 +106,10 @@ void MainWindow::frame_gathered(QPixmap frame) {
  * display frame, gathered by local camera
  */
 void MainWindow::display_frame(QPixmap frame) {
+   // qDebug() << "displaying [LOCAL] frame\n";
     myPixmap.setPixmap(frame);
     ui->graphicsView->fitInView(&myPixmap, Qt::KeepAspectRatio);
 }
-
-
-
-
-
-
 
 
 
@@ -149,6 +145,14 @@ MainWindow::~MainWindow()
         if (thread.joinable()) {
             thread.join();
         }
+    }
+
+    if (sipper) {
+        sipper->shutdown();
+    }
+
+    if (rtp_service) {
+        rtp_service->shutdown();
     }
 
 }
