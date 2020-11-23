@@ -17,7 +17,7 @@ using namespace net;
 #define MAX_PART_SIZE 1300
 
 struct frame_data {
-   cv::Mat frame;
+   cv::Mat frame; // or ptr<cv::Mat> to avoid copy
    std::uint32_t id = 0;
 
    frame_data(const cv::Mat & mat, std::uint32_t id)
@@ -56,6 +56,7 @@ private:
     asio::io_context & ios;
     asio::ip::udp::endpoint remote;
     asio::ip::udp::socket sock;
+    //asio::io_context::strand frame_strand;
 
     tsqueue<frame_data> frames_out;
     tsqueue<frame_data> frames_in;

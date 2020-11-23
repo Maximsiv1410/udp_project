@@ -31,7 +31,6 @@ namespace net {
             InAction, // == AckSent == AckReceived
 
             /* Callee zone */
-
             InviteReceived,
             InviteTryingSent,
             InviteRingingSent,
@@ -80,6 +79,7 @@ private:
     void on_invite(sip::request & request);
 
     void on_ack(sip::request & request);
+
     void on_bye(sip::request & request);
 public slots:
 

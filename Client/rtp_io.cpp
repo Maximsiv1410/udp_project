@@ -15,8 +15,11 @@ rtp_io::rtp_io(asio::io_context & ios, std::string addr, std::uint16_t port)
 }
 
 void rtp_io::cache_frame(cv::Mat img, std::size_t frame_id) {
-    // or should it be queued and extracted later?
     auto frame = std::make_shared<frame_data>(img, frame_id);
+
+    // probably we should have strand here
+    // because we want to be guaranteed
+    // to enqueue each 'frame' consistently
     asio::post(ios, [this, frame]{ send_frame(frame); });
 }
 
@@ -51,7 +54,7 @@ void rtp_io::received_packet(realtime::rtp_packet & pack) {
         frame_offset += header.part_size;
         curr_part++;
     }
-    // oops, reordering, just skip frame and start gathering next
+    // oops, reordering, just skip current frame and start gathering next
     else {
         //qDebug() << "reordering happened " << header.frame_no << ", part_no: " << header.part_no << ", going to next frame\n";
         frame_in_counter = header.frame_no;
@@ -76,6 +79,7 @@ void rtp_io::received_packet(realtime::rtp_packet & pack) {
        QBuffer buffer(&bytes);
        QImageReader reader(&buffer);
        QImage img = reader.read();
+
        emit frame_gathered(QPixmap::fromImage(img));
 
        frame_offset = 0;
@@ -87,16 +91,10 @@ void rtp_io::received_packet(realtime::rtp_packet & pack) {
 
 
 void rtp_io::send_frame(std::shared_ptr<frame_data> fd) {
-    //if (frames_out.empty()) return;
-
-    //frame_data fd;
-    //bool attempt = frames_out.try_pop(fd);
-    //if (!attempt) return;
-
     std::vector<uchar> image;
 
     std::vector<int> quality_params(2);
-    quality_params[0] = CV_IMWRITE_JPEG_QUALITY; // Кодек JPEG
+    quality_params[0] = CV_IMWRITE_JPEG_QUALITY;
     quality_params[1] = 40;
     cv::imencode(".jpg", fd->frame, image, quality_params);
 
@@ -107,7 +105,7 @@ void rtp_io::send_frame(std::shared_ptr<frame_data> fd) {
     for (std::uint16_t i = 1; i <= img_parts; i++) {
 
         realtime::rtp_packet packet;
-        packet.header().csrc_count(0);
+        packet.header().csrc_count(0); // to avoid csrc id's parsing
 
         realtime::video_header videoHeader;
         videoHeader.frame_no = fd->id;
@@ -121,7 +119,7 @@ void rtp_io::send_frame(std::shared_ptr<frame_data> fd) {
 
         packet.payload().resize(sizeof(videoHeader) + videoHeader.part_size);
 
-        std::memcpy(packet.payload().data(), (char*)&videoHeader, sizeof(videoHeader));
+        std::memcpy(packet.payload().data(), reinterpret_cast<char*>(&videoHeader), sizeof(videoHeader));
         std::memcpy(packet.payload().data() + sizeof(videoHeader), image.data() + img_offset, videoHeader.part_size);
         img_offset += videoHeader.part_size;
 

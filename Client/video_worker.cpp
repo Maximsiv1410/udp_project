@@ -42,9 +42,12 @@ void video_worker::start_stream() {
         }
         else {
             qDebug() << "cant' get frame from camera, exiting!\n";
-            return;
+            // capture.release();
+            break;
         }
     }
+
+    qDebug() << "exiting video_worker\n";
 }
 
 void video_worker::stop_stream() {

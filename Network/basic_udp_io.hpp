@@ -36,8 +36,7 @@ namespace net {
 		bool notify_mode {false};
 	
 		std::atomic<unsigned long long> bytes_out{0};
-
-                std::atomic<unsigned long long> bytes_in{0};
+        std::atomic<unsigned long long> bytes_in{0};
 
 	public:
 		basic_udp_service(io_context& ios, ip::udp::socket& sock)
@@ -78,13 +77,13 @@ namespace net {
 			cback = std::move(callback);
 		}
 
-		void poll(std::function<void(input_type&&)> task) {
+		void poll(/*size_t count, */std::function<void(input_type&&)> task) {
 			if (notify_mode) return;
 
 			input_type input;
 			while (!ios_.stopped()) {
 				qin.wait_and_pop(input);		
-				task(std::move(input));
+				task(std::move(input)); // or call default callback?
 			}
 		} 
 
@@ -123,6 +122,10 @@ namespace net {
 		}
 
 		void init_send() {
+			// probably we should have only single write operation
+			// at particular time moment
+			// to avoid 'reordering' of packets
+			// because of multithreaded mode
 			asio::post(ios_, [this]{ try_write();});
 		}
 
@@ -138,6 +141,8 @@ namespace net {
 				return;
 			}		
 
+			// or just use shared_ptr<char[]> here
+			// and provide same stuff in builder?
 			auto out = std::make_shared<std::vector<char>>();
 			out->resize(message.total());
 
@@ -201,7 +206,8 @@ namespace net {
 				auto input = std::make_shared<input_type>(parser.parse());
 
 				// callback will be called only after completion of previous
-				strandie->post( [this, input]
+				// because we are queueing them consistently after every 'read'
+				strandie->post( [this, input /*, cback */]
 				{				
 					std::function<void(input_type&&)> task;
 					{
