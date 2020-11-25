@@ -1,10 +1,11 @@
 #include "rtp_io.h"
 
-rtp_io::rtp_io(asio::io_context & ios, std::string addr, std::uint16_t port)
-: realtime::client(ios, sock),
-  ios(ios),
-  remote(asio::ip::address::from_string(addr), port),
-  sock(ios)
+rtp_io::rtp_io(asio::io_context & ioc, std::string addr, std::uint16_t port)
+: realtime::client(ioc, sock)
+, ios(ioc)
+, remote(asio::ip::address::from_string(addr), port)
+, sock(ioc)
+//, frame_strand(ioc)
 {
     sock.open(asio::ip::udp::v4());
     sock.connect(remote);
@@ -12,6 +13,8 @@ rtp_io::rtp_io(asio::io_context & ios, std::string addr, std::uint16_t port)
     {
         received_packet(pack);
     });
+
+    frame_strand.reset(new asio::io_context::strand(ios));
 }
 
 void rtp_io::cache_frame(cv::Mat img, std::size_t frame_id) {
@@ -20,7 +23,8 @@ void rtp_io::cache_frame(cv::Mat img, std::size_t frame_id) {
     // probably we should have strand here
     // because we want to be guaranteed
     // to enqueue each 'frame' consistently
-    asio::post(ios, [this, frame]{ send_frame(frame); });
+    //asio::post(ios, [this, frame]{ send_frame(frame); });
+    frame_strand->post([this, frame]{ send_frame(frame); });
 }
 
 asio::ip::udp::endpoint rtp_io::local() {
@@ -124,10 +128,10 @@ void rtp_io::send_frame(std::shared_ptr<frame_data> fd) {
         img_offset += videoHeader.part_size;
 
         packet.set_remote(this->sock.remote_endpoint());
-        enqueue(packet);
+        //enqueue(packet);
+        this->async_send(packet);
     }
-    //qDebug() << "sending frame with id " << fd->id << " sizeof " << image.size() << '\n';
-    init_send();
+    //init_send();
 }
 
 

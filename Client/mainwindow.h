@@ -61,5 +61,8 @@ private:
     std::unique_ptr<rtp_io> rtp_service;
 
     std::vector<std::thread> task_force;
+
+    std::chrono::time_point<std::chrono::high_resolution_clock> start;
+    std::atomic<int> i = 0;
 };
 #endif // MAINWINDOW_H

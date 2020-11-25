@@ -88,7 +88,14 @@ void MainWindow::on_registerBtn_clicked()
 
 void MainWindow::on_stopCall_clicked()
 {
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto dur = std::chrono::duration_cast<std::chrono::seconds>(stop - start);
+    auto n = dur.count();
+    if (!n) n++;
+    qDebug() << "fps is: " << (i / n);
 
+    i = 0;
+    start = std::chrono::high_resolution_clock::now();
 }
 
 /*
@@ -96,6 +103,11 @@ void MainWindow::on_stopCall_clicked()
  */
 
 void MainWindow::frame_gathered(QPixmap frame) {
+    if (!i) {
+        start = std::chrono::high_resolution_clock::now();
+    }
+    i++;
+
     //qDebug() << "displaying [REMOTE] frame\n";
     partnerPixmap.setPixmap(frame);
     ui->partnerGraphicsView->fitInView(&partnerPixmap, Qt::KeepAspectRatio);

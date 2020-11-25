@@ -30,7 +30,7 @@ struct frame_data {
 class rtp_io : public QObject, public realtime::client  {
     Q_OBJECT
 public:
-    rtp_io(asio::io_context & ios, std::string addr, std::uint16_t port);
+    rtp_io(asio::io_context & ioc, std::string addr, std::uint16_t port);
 
 public slots:
     void cache_frame(cv::Mat img, std::size_t frame_id);
@@ -56,7 +56,7 @@ private:
     asio::io_context & ios;
     asio::ip::udp::endpoint remote;
     asio::ip::udp::socket sock;
-    //asio::io_context::strand frame_strand;
+    std::unique_ptr<asio::io_context::strand> frame_strand;
 
     tsqueue<frame_data> frames_out;
     tsqueue<frame_data> frames_in;

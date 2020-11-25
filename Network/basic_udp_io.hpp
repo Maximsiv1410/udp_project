@@ -19,6 +19,7 @@ namespace net {
 		using buffer = Buffer;
 
 		buffer in_buff;
+		
 
 		// provide some align to deny false sharing and improve cache coherency
 		std::function<void(input_type&&)> cback;
@@ -31,18 +32,23 @@ namespace net {
 		ip::udp::socket& sock_;
 		ip::udp::endpoint remote_;
 
-		std::unique_ptr<io_context::strand> strandie {nullptr};
+		io_context::strand write_strand;
+		io_context::strand handler_strand;
 
 		bool notify_mode {false};
 	
 		std::atomic<unsigned long long> bytes_out{0};
         std::atomic<unsigned long long> bytes_in{0};
 
+        std::mutex w_mtx;
+        bool writing = false;
+
 	public:
 		basic_udp_service(io_context& ios, ip::udp::socket& sock)
-			: 
-			ios_(ios),
-			sock_(sock) 
+			: ios_(ios)
+			, sock_(sock) 
+			, write_strand(ios)
+			, handler_strand(ios)
 		{
 		}
 
@@ -59,9 +65,6 @@ namespace net {
 
 		void start(bool notify = false) {
 			notify_mode = notify;
-			if (notify) { 
-				strandie = std::make_unique<io_context::strand>(ios_); 
-			} // bad?
 			read();
 		}
 
@@ -89,31 +92,23 @@ namespace net {
 
 
 		// send message bypassing queue
-		void async_send(output_type & output /* std::function<void()> completion_handler */) {
-			auto out = std::make_shared<std::vector<char>>();
-			out->resize(output.total());
+		void async_send(output_type & output) {
+			//auto out = std::make_shared<char[]>(output.total());
+			std::shared_ptr<char[]> out(new char[output.total()]);
 
 			output_builder builder(output);
-			builder.extract(out->data());
+			builder.extract(out.get());
 
-			
-			//std::cout << "writing to " << output.remote() << '\n';
-			sock_.async_send_to(asio::buffer(out->data(), out->size()), output.remote(),
-			[this, out](std::error_code ec, std::size_t bytes)
+            write_strand.post([this, out, remote{output.remote()}, total{output.total()}]
 			{
-				if (!ec) {
-                    if (bytes) {
-						bytes_out.fetch_add(bytes, std::memory_order_relaxed);
-						//std::cout << "written " << bytes << " bytes.\n";
-					}
-					else {
-						std::cout << "bad write - no bytes\n";
-					}
+				std::size_t bytes = sock_.send_to(asio::buffer(out.get(), total), remote);
+				if (!bytes) {
+					std::cout << "Can't write to socket -> exiting\n";
 				}
 				else {
-					std::cout << ec.message() + "\n";
+
 				}
-			});
+            });
 		}
 
 
@@ -122,49 +117,52 @@ namespace net {
 		}
 
 		void init_send() {
-			// probably we should have only single write operation
-			// at particular time moment
-			// to avoid 'reordering' of packets
-			// because of multithreaded mode
-			asio::post(ios_, [this]{ try_write();});
+			bool busy;
+			{
+				std::lock_guard<std::mutex> guard(w_mtx);
+				busy = writing;
+			}
+			if (!busy && !qout.empty()) {
+				write_strand.post([this]{ write_queue(); });
+			}
 		}
 
 
 
 	private:
-		void try_write() {	
-			if (qout.empty()) return;
 
-			output_type message;
-			bool attempt = qout.try_pop(message);
-			if (!attempt) {		
-				return;
-			}		
-
-			// or just use shared_ptr<char[]> here
-			// and provide same stuff in builder?
-			auto out = std::make_shared<std::vector<char>>();
-			out->resize(message.total());
-
-			output_builder builder(message);
-			builder.extract(out->data());
-
-			sock_.async_send_to(asio::buffer(out->data(), out->size()), message.remote(),
-			[this, out](std::error_code ec, std::size_t bytes)
+		void write_queue() {
 			{
-				if (!ec) {
-					if (bytes) {
-						bytes_out.fetch_add(bytes, std::memory_order_relaxed);
-					}
-					else {
-						std::cout << "bad write - no bytes\n";
-					}
-					try_write();
+				std::lock_guard<std::mutex> guard(w_mtx);
+				writing = true;
+			}
+
+			while(!qout.empty()) {
+				output_type message;
+				bool attempt = qout.try_pop(message);
+				if (!attempt) return;
+				
+				char * buffer = new char[message.total()];
+
+				output_builder builder(message);
+				builder.extract(buffer);
+
+				std::size_t bytes = sock_.send_to(asio::buffer(buffer, message.total()), message.remote());
+
+				delete[] buffer;
+				if (!bytes) {				
+					std::cout << "Can't write to socket, exiting\n";
+					break;
 				}
 				else {
-					std::cout << ec.message() + "\n";
+
 				}
-			});
+			}
+
+			{
+				std::lock_guard<std::mutex> guard(w_mtx);
+				writing = false;
+			}
 		}
 
 
@@ -201,13 +199,13 @@ namespace net {
 			// this tactics are beneficial
 			// because this service allows multiple 'send' operations at a time
 
-			if (notify_mode && strandie) {
+			if (notify_mode) {
 				// probably too memory-expensive :(
 				auto input = std::make_shared<input_type>(parser.parse());
 
 				// callback will be called only after completion of previous
 				// because we are queueing them consistently after every 'read'
-				strandie->post( [this, input /*, cback */]
+				handler_strand.post( [this, input /*, cback */]
 				{				
 					std::function<void(input_type&&)> task;
 					{
